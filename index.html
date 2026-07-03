@@ -710,11 +710,16 @@
       if (authMode === 'login') {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        closeAuthModal();
-        await refreshAuthUI();
+        window.location.href = 'app.html';
+        return;
       } else {
-        const { error } = await sb.auth.signUp({ email, password });
+        const { data, error } = await sb.auth.signUp({ email, password });
         if (error) throw error;
+        if (data.session) {
+          // Email confirmation is off — user is signed in immediately.
+          window.location.href = 'app.html';
+          return;
+        }
         msgEl.className = 'auth-msg success';
         msgEl.textContent = 'Account created! Check your email to confirm, then log in.';
         switchAuthTab('login');

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrbitFlow — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --primary:#B6FF6A; --secondary:#7CFFB2; --accent-2:#4FD1FF;
+    --bg:#0B0F0C; --surface:#171E19; --text:#F3F6F3; --text-muted:#93A196;
+    --border:rgba(182,255,106,0.13); --radius:18px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; position:relative; overflow-x:hidden;}
+  body::after{
+    content:""; position:fixed; inset:0; z-index:999; pointer-events:none; opacity:.035; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  body::before{
+    content:""; position:fixed; top:-20%; right:-10%; width:800px; height:800px;
+    background:radial-gradient(circle, rgba(182,255,106,0.09) 0%, rgba(182,255,106,0) 60%);
+    z-index:0; pointer-events:none;
+  }
+  h1,h2,.display{font-family:'Playfair Display',serif; font-weight:600; letter-spacing:-0.01em;}
+  a{color:inherit; text-decoration:none;}
+  .glass{
+    background:linear-gradient(165deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+    border:1px solid rgba(255,255,255,0.07); border-radius:var(--radius);
+    backdrop-filter:blur(16px) saturate(150%);
+  }
+  #gateLoader{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:200; color:var(--text-muted); font-size:14px;}
+
+  .app-shell{display:flex; min-height:100vh;}
+  .sidebar{
+    width:250px; flex-shrink:0; padding:24px 18px; border-right:1px solid var(--border);
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; padding:6px 10px 26px;}
+  .nav-item{
+    display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px;
+    color:var(--text-muted); font-size:14px; font-weight:500; cursor:pointer;
+    transition:all .2s cubic-bezier(.16,.8,.3,1); position:relative;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.04); color:var(--text); transform:translateX(2px);}
+  .nav-item.active{background:rgba(182,255,106,0.1); color:var(--primary);}
+  .nav-item.active::before{content:""; position:absolute; left:-18px; top:50%; transform:translateY(-50%); width:3px; height:16px; border-radius:2px; background:var(--primary);}
+  .nav-spacer{flex:1;}
+  .plan-card{padding:16px; margin-bottom:10px;}
+  .plan-card .row{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:8px;}
+  .plan-badge{background:rgba(182,255,106,0.15); color:var(--primary); font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:999px;}
+  .bar{height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-bottom:8px;}
+  .bar span{display:block; height:100%; width:8%; background:linear-gradient(90deg,var(--primary),var(--secondary));}
+  .plan-sub{font-size:11px; color:var(--text-muted); margin-bottom:12px;}
+  .user-row{display:flex; align-items:center; gap:10px; padding:12px 10px; border-top:1px solid var(--border); margin-top:8px;}
+  .avatar{width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--primary),var(--accent-2)); flex-shrink:0;}
+  .user-name{font-size:13px; font-weight:600;}
+  .user-email{font-size:11px; color:var(--text-muted);}
+  .logout-link{margin-left:auto; color:var(--text-muted); font-size:13px;}
+  .logout-link:hover{color:var(--primary);}
+
+  .main{flex:1; padding:44px 48px; max-width:1100px; position:relative; z-index:1;}
+  .fade-in{opacity:0; transform:translateY(16px); animation:fadeIn .7s cubic-bezier(.16,.8,.3,1) forwards;}
+  @keyframes fadeIn{to{opacity:1; transform:translateY(0);}}
+  .eyebrow-sm{display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--primary); background:rgba(182,255,106,0.08); border:1px solid var(--border); padding:5px 13px; border-radius:999px; margin-bottom:16px;}
+  .main h1{font-size:32px; margin-bottom:8px; letter-spacing:-0.02em;}
+  .main h1 em{font-style:italic; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
+  .main .sub{color:var(--text-muted); font-size:14.5px; margin-bottom:40px;}
+  .upload-label{font-size:11.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;}
+  .dropzone{
+    border:1.5px dashed var(--border); border-radius:var(--radius); padding:64px 20px;
+    text-align:center; cursor:pointer; transition:all .25s cubic-bezier(.16,.8,.3,1); position:relative;
+    background:linear-gradient(165deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  }
+  .dropzone:hover, .dropzone.drag{border-color:rgba(182,255,106,0.5); background:rgba(182,255,106,0.03); transform:translateY(-2px);}
+  .dropzone .icon{
+    width:56px; height:56px; border-radius:16px;
+    background:linear-gradient(135deg, rgba(182,255,106,0.18), rgba(79,209,255,0.1));
+    border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:22px;
+    transition:transform .25s ease;
+  }
+  .dropzone:hover .icon{transform:translateY(-3px) scale(1.05);}
+  .dropzone .title{font-family:'Playfair Display',serif; font-weight:600; font-size:17px; margin-bottom:7px;}
+  .dropzone .hint{font-size:13px; color:var(--text-muted);}
+  .dropzone input{position:absolute; inset:0; opacity:0; cursor:pointer;}
+  .projects-label{margin-top:48px; margin-bottom:16px; font-size:11.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted);}
+  .empty-projects{padding:50px; text-align:center; color:var(--text-muted); font-size:14px; border-style:dashed; border-color:var(--border);}
+  .empty-projects .icon-lg{font-size:26px; opacity:.5; margin-bottom:10px;}
+
+  @media (max-width:800px){
+    .app-shell{flex-direction:column;}
+    .sidebar{width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border); align-items:center;}
+    .nav-spacer, .plan-card, .user-row{display:none;}
+    .main{padding:24px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="gateLoader">Checking your session…</div>
+
+<div class="app-shell" id="appShell" style="display:none;">
+  <aside class="sidebar">
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 30 30" fill="none">
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="30" y2="30"><stop offset="0%" stop-color="#B6FF6A"/><stop offset="100%" stop-color="#4FD1FF"/></linearGradient></defs>
+        <circle cx="15" cy="15" r="11" stroke="url(#lg1)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="52 15"/>
+        <circle cx="24" cy="9" r="2.4" fill="#B6FF6A"/>
+      </svg>
+      OrbitFlow
+    </div>
+    <div class="nav-item active">🏠 Home</div>
+    <div class="nav-item">🔍 Search</div>
+    <div class="nav-item">🎨 Templates</div>
+    <div class="nav-item">⚙️ Settings</div>
+    <div class="nav-spacer"></div>
+    <div class="glass plan-card">
+      <div class="row"><span>Free plan</span><span class="plan-badge">FREE</span></div>
+      <div class="bar"><span></span></div>
+      <div class="plan-sub">5 min transcription left this month</div>
+      <a href="index.html#pricing" style="font-size:12.5px; color:var(--primary); font-weight:600;">Upgrade →</a>
+    </div>
+    <div class="user-row">
+      <div class="avatar"></div>
+      <div>
+        <div class="user-name" id="userName">—</div>
+        <div class="user-email" id="userEmail">—</div>
+      </div>
+      <a href="#" class="logout-link" onclick="logout(event)">Log out</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <span class="eyebrow-sm fade-in" style="animation-delay:.05s">Dashboard</span>
+    <h1 id="greeting" class="fade-in" style="animation-delay:.12s">Good to see you 👋</h1>
+    <p class="sub fade-in" style="animation-delay:.18s">Upload a video and let OrbitFlow <em style="font-style:italic; color:var(--primary);">generate</em> your captions.</p>
+
+    <div class="upload-label fade-in" style="animation-delay:.24s">Upload a video</div>
+    <div class="dropzone fade-in" id="dropzone" style="animation-delay:.3s">
+      <input type="file" accept="video/mp4,video/quicktime" id="fileInput">
+      <div class="icon">⬆️</div>
+      <div class="title">Drop your video here</div>
+      <div class="hint">or click to browse — MP4/MOV, up to 30 MB for now</div>
+    </div>
+
+    <div class="projects-label fade-in" style="animation-delay:.36s">Recent projects</div>
+    <div class="glass empty-projects fade-in" style="animation-delay:.4s">
+      <div class="icon-lg">🎬</div>
+      No projects yet — upload a video above to get started.
+    </div>
+  </main>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://znqujdatizxlcyheuscw.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_xac6DqPJuwkVc6UFTJ30rQ_Z6f1P_kR";
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  (async function gate() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session || !session.user) {
+      window.location.href = 'index.html';
+      return;
+    }
+    const email = session.user.email;
+    document.getElementById('userName').textContent = email.split('@')[0];
+    document.getElementById('userEmail').textContent = email;
+    document.getElementById('greeting').textContent = `Good to see you, ${email.split('@')[0]} 👋`;
+    document.getElementById('gateLoader').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+  })();
+
+  async function logout(e) {
+    e.preventDefault();
+    await sb.auth.signOut();
+    window.location.href = 'index.html';
+  }
+
+  // Placeholder — actual upload/transcription pipeline comes in the next phase.
+  const dz = document.getElementById('dropzone');
+  const fi = document.getElementById('fileInput');
+  fi.addEventListener('change', () => {
+    if (fi.files[0]) alert(`Selected: ${fi.files[0].name}\n\n(Upload + captioning pipeline is being built next — this is just the shell for now.)`);
+  });
+  ['dragover','dragleave','drop'].forEach(evt => {
+    dz.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dz.classList.toggle('drag', evt === 'dragover');
+    });
+  });
+</script>
+</body>
+</html>
