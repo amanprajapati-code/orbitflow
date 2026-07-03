@@ -89,6 +89,17 @@
   .empty-projects{padding:50px; text-align:center; color:var(--text-muted); font-size:14px; border-style:dashed; border-color:var(--border);}
   .empty-projects .icon-lg{font-size:26px; opacity:.5; margin-bottom:10px;}
 
+  .preview-wrap{margin-top:24px;}
+  .preview-video{width:100%; max-width:360px; border-radius:14px; border:1px solid var(--border); display:block;}
+  .status-line{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:13.5px; color:var(--text-muted);}
+  .spinner{width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--primary); animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .transcript-list{margin-top:18px; display:flex; flex-direction:column; gap:8px; max-width:560px;}
+  .seg-row{display:flex; gap:14px; padding:12px 16px; align-items:baseline;}
+  .seg-time{font-size:11.5px; color:var(--primary); font-weight:700; white-space:nowrap; min-width:70px;}
+  .seg-text{font-size:14px; color:var(--text);}
+  .error-box{margin-top:16px; padding:14px 18px; border-radius:12px; background:rgba(255,90,90,0.08); border:1px solid rgba(255,90,90,0.25); color:#E39A9A; font-size:13.5px; max-width:560px;}
+
   @media (max-width:800px){
     .app-shell{flex-direction:column;}
     .sidebar{width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border); align-items:center;}
@@ -145,6 +156,15 @@
       <div class="hint">or click to browse — MP4/MOV, up to 30 MB for now</div>
     </div>
 
+    <div id="previewArea" class="preview-wrap" style="display:none;">
+      <video id="previewVideo" class="preview-video" controls></video>
+      <div id="statusLine" class="status-line" style="display:none;">
+        <span class="spinner"></span> <span id="statusText">Transcribing…</span>
+      </div>
+      <div id="errorBox" class="error-box" style="display:none;"></div>
+      <div id="transcriptList" class="transcript-list"></div>
+    </div>
+
     <div class="projects-label fade-in" style="animation-delay:.36s">Recent projects</div>
     <div class="glass empty-projects fade-in" style="animation-delay:.4s">
       <div class="icon-lg">🎬</div>
@@ -178,18 +198,79 @@
     window.location.href = 'index.html';
   }
 
-  // Placeholder — actual upload/transcription pipeline comes in the next phase.
+  // ===== Upload → Preview → Transcribe =====
   const dz = document.getElementById('dropzone');
   const fi = document.getElementById('fileInput');
-  fi.addEventListener('change', () => {
-    if (fi.files[0]) alert(`Selected: ${fi.files[0].name}\n\n(Upload + captioning pipeline is being built next — this is just the shell for now.)`);
-  });
+  const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+  const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/transcribe`;
+
+  const previewArea = document.getElementById('previewArea');
+  const previewVideo = document.getElementById('previewVideo');
+  const statusLine = document.getElementById('statusLine');
+  const statusText = document.getElementById('statusText');
+  const errorBox = document.getElementById('errorBox');
+  const transcriptList = document.getElementById('transcriptList');
+
+  fi.addEventListener('change', () => handleFile(fi.files[0]));
   ['dragover','dragleave','drop'].forEach(evt => {
     dz.addEventListener(evt, (e) => {
       e.preventDefault();
       dz.classList.toggle('drag', evt === 'dragover');
     });
   });
+  dz.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
+
+  async function handleFile(file) {
+    if (!file) return;
+    errorBox.style.display = 'none';
+    transcriptList.innerHTML = '';
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      previewArea.style.display = 'block';
+      errorBox.style.display = 'block';
+      errorBox.textContent = `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max allowed is 30 MB for now.`;
+      return;
+    }
+
+    previewArea.style.display = 'block';
+    previewVideo.src = URL.createObjectURL(file);
+    statusLine.style.display = 'flex';
+    statusText.textContent = 'Transcribing…';
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Transcription failed');
+
+      statusLine.style.display = 'none';
+      if (!data.segments || data.segments.length === 0) {
+        errorBox.style.display = 'block';
+        errorBox.textContent = 'No speech detected in this video.';
+        return;
+      }
+      data.segments.forEach(seg => {
+        const row = document.createElement('div');
+        row.className = 'glass seg-row';
+        const mm = Math.floor(seg.start / 60), ss = Math.floor(seg.start % 60).toString().padStart(2, '0');
+        row.innerHTML = `<span class="seg-time">${mm}:${ss}</span><span class="seg-text">${seg.text}</span>`;
+        transcriptList.appendChild(row);
+      });
+    } catch (err) {
+      statusLine.style.display = 'none';
+      errorBox.style.display = 'block';
+      errorBox.textContent = err.message || 'Something went wrong while transcribing.';
+    }
+  }
 </script>
 </body>
 </html>
