@@ -6,6 +6,43 @@
 <title>OrbitFlow — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  import { FFmpeg } from "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
+  import { fetchFile, toBlobURL } from "https://unpkg.com/@ffmpeg/util@0.12.2/dist/esm/index.js";
+
+  let ffmpegInstance = null;
+  async function getFFmpeg() {
+    if (ffmpegInstance) return ffmpegInstance;
+    const ff = new FFmpeg();
+    const base = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
+    await ff.load({
+      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+    });
+    ffmpegInstance = ff;
+    return ff;
+  }
+
+  // Extracts just the audio track from a video file — always small,
+  // regardless of how big the source video is. Falls back to the
+  // original file if extraction fails for any reason.
+  window.extractAudioBlob = async function (file) {
+    try {
+      const ff = await getFFmpeg();
+      const inputName = "input." + (file.name.split('.').pop() || "mp4");
+      await ff.writeFile(inputName, await fetchFile(file));
+      await ff.exec(["-i", inputName, "-vn", "-acodec", "libmp3lame", "-b:a", "64k", "-ac", "1", "output.mp3"]);
+      const data = await ff.readFile("output.mp3");
+      await ff.deleteFile(inputName);
+      await ff.deleteFile("output.mp3");
+      const ab = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+      return new Blob([ab], { type: "audio/mp3" });
+    } catch (err) {
+      console.warn("Audio extraction failed, falling back to full file:", err);
+      return file;
+    }
+  };
+</script>
 <style>
   :root{
     --primary:#B6FF6A; --secondary:#7CFFB2; --accent-2:#4FD1FF;
@@ -201,7 +238,18 @@
   // ===== Upload → Preview → Transcribe =====
   const dz = document.getElementById('dropzone');
   const fi = document.getElementById('fileInput');
-  const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+  const MAX_FILE_SIZE_BYTES = 200 * 1024 * 1024; // audio-only upload makes this safe now
+  const MAX_DURATION_SEC = 120;
+
+  function getVideoDuration(file) {
+    return new Promise((resolve, reject) => {
+      const v = document.createElement('video');
+      v.preload = 'metadata';
+      v.onloadedmetadata = () => { resolve(v.duration); URL.revokeObjectURL(v.src); };
+      v.onerror = () => reject(new Error('Could not read video metadata'));
+      v.src = URL.createObjectURL(file);
+    });
+  }
   const FUNCTION_URL = `${SUPABASE_URL}/functions/v1/transcribe`;
 
   const previewArea = document.getElementById('previewArea');
@@ -228,21 +276,36 @@
     if (file.size > MAX_FILE_SIZE_BYTES) {
       previewArea.style.display = 'block';
       errorBox.style.display = 'block';
-      errorBox.textContent = `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max allowed is 30 MB for now.`;
+      errorBox.textContent = `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max allowed is 200 MB for now.`;
       return;
+    }
+
+    try {
+      const duration = await getVideoDuration(file);
+      if (duration > MAX_DURATION_SEC) {
+        previewArea.style.display = 'block';
+        errorBox.style.display = 'block';
+        errorBox.textContent = `Video is ${Math.round(duration)}s long. Max allowed is 2 minutes for now.`;
+        return;
+      }
+    } catch (e) {
+      // If duration can't be read, let it through — size cap still protects us.
     }
 
     previewArea.style.display = 'block';
     previewVideo.src = URL.createObjectURL(file);
     statusLine.style.display = 'flex';
-    statusText.textContent = 'Transcribing…';
+    statusText.textContent = 'Extracting audio…';
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
 
+      const audioBlob = await window.extractAudioBlob(file);
+
+      statusText.textContent = 'Transcribing…';
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', audioBlob, 'audio.mp3');
 
       const res = await fetch(FUNCTION_URL, {
         method: 'POST',
