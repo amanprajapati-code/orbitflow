@@ -14,10 +14,12 @@
   async function getFFmpeg() {
     if (ffmpegInstance) return ffmpegInstance;
     const ff = new FFmpeg();
-    const base = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
+    const coreBase = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
+    const pkgBase = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm";
     await ff.load({
-      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await toBlobURL(`${coreBase}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${coreBase}/ffmpeg-core.wasm`, "application/wasm"),
+      classWorkerURL: await toBlobURL(`${pkgBase}/worker.js`, "text/javascript"),
     });
     ffmpegInstance = ff;
     return ff;
@@ -26,15 +28,19 @@
   // Extracts just the audio track from a video file — always small,
   // regardless of how big the source video is. Falls back to the
   // original file if extraction fails for any reason.
-  window.extractAudioBlob = async function (file) {
+  // onProgress(ratio 0-1) is called live during extraction.
+  window.extractAudioBlob = async function (file, onProgress) {
     try {
       const ff = await getFFmpeg();
+      const progressHandler = ({ progress }) => { if (onProgress) onProgress(Math.max(0, Math.min(1, progress))); };
+      ff.on('progress', progressHandler);
       const inputName = "input." + (file.name.split('.').pop() || "mp4");
       await ff.writeFile(inputName, await fetchFile(file));
       await ff.exec(["-i", inputName, "-vn", "-acodec", "libmp3lame", "-b:a", "64k", "-ac", "1", "output.mp3"]);
       const data = await ff.readFile("output.mp3");
       await ff.deleteFile(inputName);
       await ff.deleteFile("output.mp3");
+      ff.off('progress', progressHandler);
       const ab = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       return new Blob([ab], { type: "audio/mp3" });
     } catch (err) {
@@ -42,6 +48,10 @@
       return file;
     }
   };
+
+  // Warm up the engine as soon as the page loads, in the background —
+  // by the time the user picks a file, this download is already done.
+  getFFmpeg().catch(() => {});
 </script>
 <style>
   :root{
@@ -129,6 +139,8 @@
   .preview-wrap{margin-top:24px;}
   .preview-video{width:100%; max-width:360px; border-radius:14px; border:1px solid var(--border); display:block;}
   .status-line{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:13.5px; color:var(--text-muted);}
+  .progress-bar-wrap{width:100%; max-width:360px; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-top:8px;}
+  .progress-bar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--primary),var(--accent-2)); transition:width .2s ease;}
   .spinner{width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--primary); animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .transcript-list{margin-top:18px; display:flex; flex-direction:column; gap:8px; max-width:560px;}
@@ -197,7 +209,9 @@
       <video id="previewVideo" class="preview-video" controls></video>
       <div id="statusLine" class="status-line" style="display:none;">
         <span class="spinner"></span> <span id="statusText">Transcribing…</span>
+        <span id="statusPct" style="margin-left:auto; color:var(--primary); font-weight:700;"></span>
       </div>
+      <div id="progressBarWrap" class="progress-bar-wrap" style="display:none;"><div id="progressBarFill" class="progress-bar-fill"></div></div>
       <div id="errorBox" class="error-box" style="display:none;"></div>
       <div id="transcriptList" class="transcript-list"></div>
     </div>
@@ -295,27 +309,58 @@
     previewArea.style.display = 'block';
     previewVideo.src = URL.createObjectURL(file);
     statusLine.style.display = 'flex';
-    statusText.textContent = 'Extracting audio…';
+    const progressBarWrap = document.getElementById('progressBarWrap');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const statusPct = document.getElementById('statusPct');
+    progressBarWrap.style.display = 'block';
+    progressBarFill.style.width = '0%';
+    statusText.textContent = 'Warming up engine…';
+    statusPct.textContent = '';
+    const t0 = performance.now();
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
 
-      const audioBlob = await window.extractAudioBlob(file);
-
-      statusText.textContent = 'Transcribing…';
-      const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.mp3');
-
-      const res = await fetch(FUNCTION_URL, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: formData,
+      statusText.textContent = `Extracting audio (${(file.size / 1024 / 1024).toFixed(1)} MB video)…`;
+      const audioBlob = await window.extractAudioBlob(file, (ratio) => {
+        progressBarFill.style.width = `${Math.round(ratio * 100)}%`;
+        statusPct.textContent = `${Math.round(ratio * 100)}%`;
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Transcription failed');
+      const t1 = performance.now();
+      console.info(`Audio extraction took ${((t1 - t0) / 1000).toFixed(1)}s — output ${(audioBlob.size / 1024).toFixed(0)} KB`);
+
+      statusText.textContent = `Uploading & transcribing (${(audioBlob.size / 1024).toFixed(0)} KB audio)…`;
+      progressBarFill.style.width = '0%';
+      statusPct.textContent = '0%';
+
+      const data = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', FUNCTION_URL);
+        xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = Math.round((e.loaded / e.total) * 100);
+          progressBarFill.style.width = `${pct}%`;
+          statusPct.textContent = `${pct}%`;
+          if (pct >= 100) statusText.textContent = 'Transcribing…';
+        };
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error('Invalid server response')); }
+        };
+        xhr.onerror = () => reject(new Error('Network error while uploading'));
+        const fd = new FormData();
+        fd.append('file', audioBlob, 'audio.mp3');
+        xhr.send(fd);
+      });
+
+      const t2 = performance.now();
+      console.info(`Upload + transcription took ${((t2 - t1) / 1000).toFixed(1)}s`);
+      if (data.error) throw new Error(data.error);
 
       statusLine.style.display = 'none';
+      progressBarWrap.style.display = 'none';
       if (!data.segments || data.segments.length === 0) {
         errorBox.style.display = 'block';
         errorBox.textContent = 'No speech detected in this video.';
@@ -330,6 +375,7 @@
       });
     } catch (err) {
       statusLine.style.display = 'none';
+      progressBarWrap.style.display = 'none';
       errorBox.style.display = 'block';
       errorBox.textContent = err.message || 'Something went wrong while transcribing.';
     }
