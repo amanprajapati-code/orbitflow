@@ -78,6 +78,25 @@
   .login-btn{ padding:9px 20px; border-radius:999px; border:1px solid var(--border); color:var(--text-muted); font-size:14px; transition:all .2s ease; }
   .login-btn:hover{color:var(--text); border-color:rgba(182,255,106,0.4); background:rgba(182,255,106,0.05);}
 
+  .user-group{display:flex; align-items:center; gap:12px;}
+  .avatar-wrap{position:relative;}
+  .avatar-btn{
+    width:34px; height:34px; border-radius:50%; border:1.5px solid rgba(182,255,106,0.35);
+    background:linear-gradient(135deg,var(--primary),var(--accent-2)); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:#0B0F0C; font-weight:800; font-size:13px;
+    transition:transform .2s ease;
+  }
+  .avatar-btn:hover{transform:scale(1.06);}
+  .avatar-menu{
+    display:none; position:absolute; top:44px; right:0; min-width:200px; z-index:60;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.4);
+  }
+  .avatar-menu.open{display:block;}
+  .avatar-email{font-size:12px; color:var(--text-muted); padding:8px 10px; border-bottom:1px solid var(--border); margin-bottom:6px; word-break:break-all;}
+  .avatar-menu a{display:block; padding:8px 10px; border-radius:8px; font-size:13.5px; color:var(--text);}
+  .avatar-menu a:hover{background:rgba(182,255,106,0.08); color:var(--primary);}
+
   .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 28px; border-radius:999px; font-weight:600; font-size:15px; cursor:pointer; border:none; transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease; }
   .btn-primary{ background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#0B0F0C; box-shadow:0 0 0 0 rgba(182,255,106,0.4), 0 8px 24px rgba(182,255,106,0.22); }
   .btn-primary:hover{transform:translateY(-3px) scale(1.03); box-shadow:0 0 0 6px rgba(182,255,106,0.08), 0 14px 34px rgba(182,255,106,0.4);}
@@ -334,6 +353,16 @@
     </div>
     <div class="nav-actions">
       <a href="#" class="login-btn" id="navAuthBtn" onclick="openAuthModal(event)">Log in</a>
+      <div class="user-group" id="navUserGroup" style="display:none;">
+        <a href="home.html" class="btn btn-primary btn-sm" style="padding:9px 18px; font-size:13.5px;">Editor</a>
+        <div class="avatar-wrap">
+          <button class="avatar-btn" id="avatarBtn" onclick="toggleAvatarMenu(event)"></button>
+          <div class="avatar-menu" id="avatarMenu">
+            <div class="avatar-email" id="avatarEmail"></div>
+            <a href="#" onclick="logout(event)">Log out</a>
+          </div>
+        </div>
+      </div>
     </div>
   </nav>
 </header>
@@ -710,14 +739,14 @@
       if (authMode === 'login') {
         const { error } = await sb.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        window.location.href = 'app.html';
+        window.location.href = 'home.html';
         return;
       } else {
         const { data, error } = await sb.auth.signUp({ email, password });
         if (error) throw error;
         if (data.session) {
           // Email confirmation is off — user is signed in immediately.
-          window.location.href = 'app.html';
+          window.location.href = 'home.html';
           return;
         }
         msgEl.className = 'auth-msg success';
@@ -747,21 +776,35 @@
     msgEl.textContent = error ? error.message : 'Confirmation email sent — check your inbox.';
   }
 
-  async function logout() {
+  async function logout(e) {
+    if (e) e.preventDefault();
     await sb.auth.signOut();
+    document.getElementById('avatarMenu').classList.remove('open');
     await refreshAuthUI();
   }
+
+  function toggleAvatarMenu(e) {
+    e.preventDefault();
+    document.getElementById('avatarMenu').classList.toggle('open');
+  }
+  document.addEventListener('click', (e) => {
+    const wrap = document.querySelector('.avatar-wrap');
+    if (wrap && !wrap.contains(e.target)) document.getElementById('avatarMenu').classList.remove('open');
+  });
 
   async function refreshAuthUI() {
     const { data: { session } } = await sb.auth.getSession();
     const navBtn = document.getElementById('navAuthBtn');
+    const userGroup = document.getElementById('navUserGroup');
     if (session && session.user) {
-      const name = session.user.email.split('@')[0];
-      navBtn.textContent = `${name} · Log out`;
-      navBtn.onclick = (e) => { e.preventDefault(); logout(); };
+      const email = session.user.email;
+      navBtn.style.display = 'none';
+      userGroup.style.display = 'flex';
+      document.getElementById('avatarBtn').textContent = email.charAt(0).toUpperCase();
+      document.getElementById('avatarEmail').textContent = email;
     } else {
-      navBtn.textContent = 'Log in';
-      navBtn.onclick = (e) => openAuthModal(e, 'login');
+      navBtn.style.display = 'inline-flex';
+      userGroup.style.display = 'none';
     }
   }
   refreshAuthUI();
