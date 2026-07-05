@@ -4,698 +4,108 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OrbitFlow — Home</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --primary:#B6FF6A;
-    --secondary:#7CFFB2;
-    --accent-2:#4FD1FF;
-    --bg:#0B0F0C;
-    --surface:#171E19;
-    --text:#F3F6F3;
-    --text-muted:#93A196;
-    --border:rgba(182,255,106,0.13);
-    --radius:22px;
+    --primary:#B6FF6A; --secondary:#7CFFB2; --accent-2:#4FD1FF;
+    --bg:#0B0F0C; --text:#F3F6F3; --text-muted:#93A196;
+    --border:rgba(182,255,106,0.13); --radius:22px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  html{scroll-behavior:smooth;}
   body{
-    background:var(--bg); color:var(--text);
-    font-family:'Inter', sans-serif; line-height:1.55;
-    overflow-x:hidden; cursor:default;
+    background:var(--bg); color:var(--text); font-family:'Inter',sans-serif;
+    min-height:100vh; display:flex; flex-direction:column; position:relative; overflow-x:hidden;
   }
-  h1,h2,h3,.display{ font-family:'Playfair Display', serif; font-weight:600; letter-spacing:-0.015em; }
+  h1{font-family:'Playfair Display',serif; font-weight:600; letter-spacing:-0.02em;}
   a{color:inherit; text-decoration:none;}
-  .wrap{max-width:1180px; margin:0 auto; padding:0 24px;}
-  img{max-width:100%; display:block;}
-  ::selection{background:var(--primary); color:#0B0F0C;}
-  ::-webkit-scrollbar{width:9px;}
-  ::-webkit-scrollbar-track{background:var(--bg);}
-  ::-webkit-scrollbar-thumb{background:#2a352c; border-radius:8px;}
-
-  /* grain texture overlay for premium tactile feel */
-  body::after{
-    content:""; position:fixed; inset:0; z-index:999; pointer-events:none;
-    opacity:.035; mix-blend-mode:overlay;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
-  /* cursor spotlight */
-  #spotlight{
-    position:fixed; top:0; left:0; width:520px; height:520px;
-    background:radial-gradient(circle, rgba(182,255,106,0.08), transparent 70%);
-    border-radius:50%; pointer-events:none; z-index:1;
-    transform:translate(-50%,-50%); transition:opacity .3s ease;
-    will-change:transform;
-  }
-
   body::before{
-    content:""; position:fixed; top:-25%; left:50%; transform:translateX(-50%);
-    width:1000px; height:1000px;
-    background:radial-gradient(circle, rgba(182,255,106,0.13) 0%, rgba(182,255,106,0) 60%);
-    z-index:0; pointer-events:none; animation:drift 16s ease-in-out infinite alternate;
+    content:""; position:fixed; top:-20%; left:50%; transform:translateX(-50%);
+    width:900px; height:900px; background:radial-gradient(circle, rgba(182,255,106,0.13) 0%, rgba(182,255,106,0) 60%);
+    z-index:0; pointer-events:none; animation:drift 14s ease-in-out infinite alternate;
   }
-  @keyframes drift{0%{transform:translate(-50%,0) scale(1);} 100%{transform:translate(-46%,3%) scale(1.1);}}
+  @keyframes drift{0%{transform:translate(-50%,0) scale(1);} 100%{transform:translate(-46%,3%) scale(1.08);}}
 
-  .reveal{opacity:0; transform:translateY(28px); transition:opacity .8s cubic-bezier(.16,.8,.3,1), transform .8s cubic-bezier(.16,.8,.3,1);}
-  .reveal.in{opacity:1; transform:translateY(0);}
-  .reveal-1{transition-delay:.06s;} .reveal-2{transition-delay:.14s;}
-  .reveal-3{transition-delay:.22s;} .reveal-4{transition-delay:.3s;}
-  .reveal-5{transition-delay:.38s;} .reveal-6{transition-delay:.46s;}
-
-  .hero-in{opacity:0; transform:translateY(22px); animation:heroIn .9s cubic-bezier(.16,.8,.3,1) forwards;}
-  @keyframes heroIn{to{opacity:1; transform:translateY(0);}}
-
-  header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(18px) saturate(140%); background:rgba(11,15,12,0.65); border-bottom:1px solid var(--border); }
-  nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; max-width:1180px; margin:0 auto; }
-  .logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:19px;}
-  .nav-links{display:flex; gap:34px; font-size:14px; color:var(--text-muted);}
-  .nav-links a{position:relative; padding:4px 0;}
-  .nav-links a::after{content:""; position:absolute; left:0; bottom:0; width:0; height:1px; background:var(--primary); transition:width .25s ease;}
-  .nav-links a:hover{color:var(--text);} .nav-links a:hover::after{width:100%;}
-  .login-btn{ padding:9px 20px; border-radius:999px; border:1px solid var(--border); color:var(--text-muted); font-size:14px; transition:all .2s ease; }
-  .login-btn:hover{color:var(--text); border-color:rgba(182,255,106,0.4); background:rgba(182,255,106,0.05);}
-
+  header{padding:20px 24px; display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2;}
+  .logo{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px;}
   .user-group{display:flex; align-items:center; gap:12px;}
   .avatar-wrap{position:relative;}
   .avatar-btn{
     width:34px; height:34px; border-radius:50%; border:1.5px solid rgba(182,255,106,0.35);
     background:linear-gradient(135deg,var(--primary),var(--accent-2)); cursor:pointer;
     display:flex; align-items:center; justify-content:center; color:#0B0F0C; font-weight:800; font-size:13px;
-    transition:transform .2s ease;
   }
-  .avatar-btn:hover{transform:scale(1.06);}
   .avatar-menu{
     display:none; position:absolute; top:44px; right:0; min-width:200px; z-index:60;
-    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px;
+    background:#171E19; border:1px solid var(--border); border-radius:12px; padding:10px;
     box-shadow:0 12px 30px rgba(0,0,0,0.4);
   }
   .avatar-menu.open{display:block;}
   .avatar-email{font-size:12px; color:var(--text-muted); padding:8px 10px; border-bottom:1px solid var(--border); margin-bottom:6px; word-break:break-all;}
-  .avatar-menu a{display:block; padding:8px 10px; border-radius:8px; font-size:13.5px; color:var(--text);}
+  .avatar-menu a{display:block; padding:8px 10px; border-radius:8px; font-size:13.5px;}
   .avatar-menu a:hover{background:rgba(182,255,106,0.08); color:var(--primary);}
 
-  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 28px; border-radius:999px; font-weight:600; font-size:15px; cursor:pointer; border:none; transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease; }
-  .btn-primary{ background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#0B0F0C; box-shadow:0 0 0 0 rgba(182,255,106,0.4), 0 8px 24px rgba(182,255,106,0.22); }
-  .btn-primary:hover{transform:translateY(-3px) scale(1.03); box-shadow:0 0 0 6px rgba(182,255,106,0.08), 0 14px 34px rgba(182,255,106,0.4);}
-  .btn-primary .arrow{transition:transform .2s ease;}
-  .btn-primary:hover .arrow{transform:translateX(4px);}
-  .btn-ghost{ background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--text); }
-  .btn-ghost:hover{background:rgba(255,255,255,0.07); transform:translateY(-3px);}
-
-  .glass{
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; z-index:1;}
+  .card{
+    max-width:460px; width:100%; text-align:center; padding:48px 36px;
     background:linear-gradient(165deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
     border:1px solid rgba(255,255,255,0.07); border-radius:var(--radius);
-    backdrop-filter:blur(18px) saturate(150%); -webkit-backdrop-filter:blur(18px) saturate(150%);
-    box-shadow:0 10px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    backdrop-filter:blur(18px) saturate(150%);
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    opacity:0; transform:translateY(20px); animation:cardIn .7s cubic-bezier(.16,.8,.3,1) forwards;
   }
-  .glow-border{ position:relative; border-radius:var(--radius); }
-  .glow-border::before{
-    content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
-    background:conic-gradient(from var(--angle,0deg), var(--primary), var(--accent-2), var(--secondary), var(--primary));
-    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite:xor; mask-composite:exclude;
-    animation:spin 6s linear infinite; z-index:2; pointer-events:none;
+  @keyframes cardIn{to{opacity:1; transform:translateY(0);}}
+  .icon-badge{
+    width:56px; height:56px; margin:0 auto 20px; border-radius:16px;
+    background:linear-gradient(135deg, rgba(182,255,106,0.18), rgba(79,209,255,0.1));
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px;
   }
-  .glow-border::after{
-    content:""; position:absolute; inset:-18px; border-radius:inherit;
-    background:conic-gradient(from var(--angle,0deg), var(--primary), var(--accent-2), var(--secondary), var(--primary));
-    filter:blur(28px); opacity:.22; z-index:-1; animation:spin 6s linear infinite; pointer-events:none;
+  .card h1{font-size:26px; margin-bottom:10px;}
+  .card p{color:var(--text-muted); font-size:14.5px; margin-bottom:30px;}
+  .btn-primary{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:15px 26px; border-radius:999px; font-weight:600; font-size:15.5px;
+    background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#0B0F0C; border:none; cursor:pointer;
+    box-shadow:0 8px 24px rgba(182,255,106,0.25); transition:transform .2s ease, box-shadow .2s ease;
   }
-  @property --angle{syntax:'<angle>'; initial-value:0deg; inherits:false;}
-  @keyframes spin{to{--angle:360deg;}}
-  .glow-border > .glass{border-radius:var(--radius);}
-  .tilt{transform-style:preserve-3d; transition:transform .35s cubic-bezier(.16,.8,.3,1);}
-
-  /* ===== HERO ===== */
-  .hero{position:relative; z-index:2; padding:96px 0 30px;}
-  .hero-grid{display:grid; grid-template-columns:1.08fr 1fr; gap:60px; align-items:center;}
-  .eyebrow{ display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--primary); background:rgba(182,255,106,0.08); border:1px solid var(--border); padding:7px 15px; border-radius:999px; margin-bottom:24px; }
-  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--primary); animation:pulse 1.8s ease-in-out infinite;}
-  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.25;}}
-  .hero h1{font-size:58px; line-height:1.06; margin-bottom:22px; letter-spacing:-0.02em;}
-  .hero h1 em{font-style:italic; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  .hero p.lead{font-size:18px; color:var(--text-muted); max-width:490px; margin-bottom:34px;}
-  .hero-ctas{display:flex; gap:14px; margin-bottom:30px;}
-  .avatars{display:flex;}
-  .avatars span{width:30px; height:30px; border-radius:50%; border:2px solid var(--bg); margin-left:-8px; background:linear-gradient(135deg,var(--primary),var(--accent-2));}
-  .avatars span:first-child{margin-left:0;}
-  .rating{display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--text-muted);}
-
-  .mock-panel{padding:22px; perspective:1200px;}
-  .mock-video{ border-radius:15px; overflow:hidden; position:relative; aspect-ratio:16/10;
-    background:
-      radial-gradient(circle at 22% 18%, rgba(124,255,178,0.42), transparent 55%),
-      radial-gradient(circle at 80% 80%, rgba(182,255,106,0.32), transparent 55%),
-      radial-gradient(circle at 50% 105%, rgba(79,209,255,0.2), transparent 60%),
-      linear-gradient(160deg, #1c2620, #080c09);
-    display:flex; align-items:flex-end; padding:16px; }
-  .mock-video::before{ content:""; position:absolute; inset:0; background:repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 7px); animation:shimmer 7s linear infinite; }
-  @keyframes shimmer{from{transform:translateX(-10%);} to{transform:translateX(10%);}}
-  .slot-media{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
-  .mock-video .media-overlay{ position:absolute; inset:0; z-index:0; background:linear-gradient(0deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.15) 100%); pointer-events:none; }
-  .slot-fallback{ display:none; position:absolute; inset:0; z-index:0; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; color:var(--text-muted); font-size:12.5px; }
-  .slot-fallback span{font-size:26px; opacity:.5;}
-  .slot-fallback code{color:var(--primary); font-size:12px;}
-  .mock-caption{background:rgba(0,0,0,0.55); padding:7px 13px; border-radius:8px; font-size:13.5px; font-weight:600; position:relative; z-index:1;}
-  .mock-caption b{color:var(--primary);}
-  .mock-controls{margin-top:16px; display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-muted);}
-  .track{flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;}
-  .track span{display:block; width:38%; height:100%; background:linear-gradient(90deg,var(--primary),var(--secondary));}
-  .mock-panel-fields{margin-top:16px; display:flex; flex-direction:column; gap:9px;}
-  .field{display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); border:1px solid var(--border); padding:11px 15px; border-radius:11px; font-size:13.5px; transition:border-color .2s ease;}
-  .field:hover{border-color:rgba(182,255,106,0.3);}
-  .field span.label{color:var(--text-muted);}
-
-  /* ===== STAT STRIP ===== */
-  .stat-strip{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:60px; position:relative; z-index:2; }
-  .stat-chip{padding:22px; text-align:center;}
-  .stat-chip .num{font-family:'Playfair Display',serif; font-size:32px; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  .stat-chip .lbl{font-size:12.5px; color:var(--text-muted); margin-top:6px;}
-
-  section{position:relative; z-index:2; padding:90px 0;}
-  .section-head{text-align:center; max-width:620px; margin:0 auto 52px;}
-  .section-head h2{font-size:38px; margin-bottom:14px;}
-  .section-head p{color:var(--text-muted); font-size:15.5px;}
-
-  /* ===== BENTO FEATURES ===== */
-  .bento{ display:grid; grid-template-columns:repeat(4, 1fr); grid-template-rows:repeat(2, auto); gap:16px; }
-  .bento .card-lg{grid-column:span 2; grid-row:span 2;}
-  .bento .card-sm{grid-column:span 2;}
-  .feature-card{ padding:28px; transition:transform .25s cubic-bezier(.16,.8,.3,1), border-color .25s ease; position:relative; overflow:hidden; }
-  .feature-card:hover{transform:translateY(-6px); border-color:rgba(182,255,106,0.35);}
-  .feature-card .glow-spot{ position:absolute; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, rgba(182,255,106,0.16), transparent 70%); top:-60px; right:-60px; opacity:0; transition:opacity .3s ease; }
-  .feature-card:hover .glow-spot{opacity:1;}
-  .feature-icon{ width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, rgba(182,255,106,0.18), rgba(79,209,255,0.1)); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-bottom:18px; font-size:20px; }
-  .feature-card h3{font-family:'Inter',sans-serif; font-size:17px; font-weight:700; margin-bottom:9px;}
-  .feature-card p{font-size:14px; color:var(--text-muted); max-width:340px;}
-  .card-lg h3{font-size:21px;}
-  .card-lg .mini-mock{ margin-top:20px; border-radius:12px; height:120px; background:linear-gradient(135deg, rgba(182,255,106,0.14), rgba(79,209,255,0.08)); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; color:var(--text-muted);}
-
-  /* ===== LANGUAGES ===== */
-  .compare-card{padding:32px;}
-  .compare-said{padding-bottom:22px; margin-bottom:22px; border-bottom:1px solid var(--border);}
-  .compare-quote{font-size:19px; font-weight:600; margin-top:8px;}
-  .compare-label{font-size:11px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted);}
-  .compare-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px;}
-  .compare-col{padding:18px 20px; border-radius:14px; border:1px solid var(--border);}
-  .compare-col.bad{background:rgba(255,90,90,0.06); border-color:rgba(255,90,90,0.18);}
-  .compare-col.bad p{color:#E39A9A; text-decoration:line-through; margin-top:8px; font-size:14.5px;}
-  .compare-col.good{background:rgba(182,255,106,0.08); border-color:rgba(182,255,106,0.28);}
-  .compare-col.good p{color:var(--text); margin-top:8px; font-weight:600; font-size:14.5px;}
-  .compare-outputs{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
-  .out-box{background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:14px 16px;}
-  .out-box p{margin-top:6px; font-size:13.5px; color:#D7DED9;}
-  @media (max-width:700px){ .compare-grid, .compare-outputs{grid-template-columns:1fr;} }
-
-  .lang-strip{display:flex; flex-wrap:wrap; gap:10px; justify-content:center;}
-  .lang-chip{padding:10px 19px; border-radius:999px; font-size:14px; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--text-muted); transition:all .2s cubic-bezier(.34,1.56,.64,1);}
-  .lang-chip:hover{transform:translateY(-4px) scale(1.04); border-color:rgba(182,255,106,0.4); color:var(--text);}
-  .lang-chip.on{background:rgba(182,255,106,0.13); color:var(--primary); border-color:rgba(182,255,106,0.4);}
-
-  /* ===== MARQUEE STYLES ===== */
-  .marquee-wrap{ position:relative; overflow:hidden; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
-  .marquee-track{ display:flex; gap:16px; width:max-content; animation:scrollX 26s linear infinite; }
-  .marquee-wrap:hover .marquee-track{animation-play-state:paused;}
-  @keyframes scrollX{from{transform:translateX(0);} to{transform:translateX(-50%);}}
-  .style-chip{ flex:0 0 auto; padding:24px 30px; min-width:160px; text-align:center; transition:transform .2s ease;}
-  .style-chip:hover{transform:translateY(-5px) scale(1.04); border-color:rgba(182,255,106,0.35) !important;}
-  .style-chip .name{font-weight:700; font-size:14.5px; margin-bottom:4px;}
-  .style-chip .tag{font-size:12px; color:var(--text-muted);}
-
-  /* ===== PRICING ===== */
-  .pricing-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:18px; align-items:center;}
-  .price-card{padding:30px; position:relative; transition:transform .25s cubic-bezier(.16,.8,.3,1);}
-  .price-card:hover{transform:translateY(-6px);}
-  .price-card.pop{transform:scale(1.045);}
-  .price-card.pop:hover{transform:scale(1.045) translateY(-6px);}
-  .badge{position:absolute; top:-13px; right:26px; background:linear-gradient(135deg, var(--primary), var(--secondary)); color:#0B0F0C; font-size:11.5px; font-weight:800; padding:6px 14px; border-radius:999px; z-index:2;}
-  .price-card h3{font-family:'Inter',sans-serif; font-size:15px; color:var(--text-muted); font-weight:600; margin-bottom:10px;}
-  .price-value{font-family:'Playfair Display',serif; font-size:40px; font-weight:700; margin-bottom:4px;}
-  .price-value span{font-size:14px; color:var(--text-muted); font-family:'Inter',sans-serif; font-weight:500;}
-  .price-sub{font-size:13px; color:var(--text-muted); margin-bottom:24px;}
-  .price-list{list-style:none; margin-bottom:28px;}
-  .price-list li{display:flex; gap:10px; align-items:flex-start; font-size:13.5px; color:#D7DED9; padding:7.5px 0;}
-  .price-list li::before{content:"✓"; color:var(--primary); font-weight:700;}
-  .accent-text{font-style:italic; background:linear-gradient(90deg,var(--primary),var(--accent-2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
-  .payg-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
-  .payg-card{padding:30px; position:relative;}
-  .payg-card.featured{border:none;}
-  .payg-price{font-family:'Playfair Display',serif; font-size:34px; font-weight:700; margin:14px 0 10px;}
-  .payg-tag{font-size:12px; font-weight:700; color:var(--primary); background:rgba(182,255,106,0.12); border:1px solid rgba(182,255,106,0.3); padding:4px 10px; border-radius:999px; vertical-align:middle; margin-left:8px;}
-  .payg-desc{font-size:13.5px; color:var(--text-muted); line-height:1.6; margin-bottom:22px;}
-  .payg-list{list-style:none; margin-bottom:22px;}
-  .payg-list li{display:flex; gap:9px; align-items:flex-start; font-size:13px; color:#D7DED9; padding:5px 0;}
-  .payg-list li::before{content:"✓"; color:var(--primary); font-weight:700;}
-  @media (max-width:760px){ .payg-grid{grid-template-columns:1fr;} }
-
-  .why-grid{display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;}
-  .why-grid p{color:var(--text-muted); font-size:15px; margin-bottom:16px;}
-  .stat-row{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:26px;}
-  .stat-box{padding:20px; transition:transform .2s ease;}
-  .stat-box:hover{transform:translateY(-4px);}
-  .stat-box .num{font-family:'Playfair Display',serif; font-size:30px; color:var(--primary);}
-  .stat-box .lbl{font-size:12.5px; color:var(--text-muted); margin-top:4px;}
-
-  .faq{max-width:720px; margin:0 auto;}
-  .faq-item{border-bottom:1px solid var(--border); padding:20px 4px;}
-  .faq-q{display:flex; justify-content:space-between; align-items:center; cursor:pointer; font-weight:600; font-size:15.5px;}
-  .faq-q .plus{color:var(--primary); font-size:19px; transition:transform .25s cubic-bezier(.34,1.56,.64,1);}
-  .faq-item.open .plus{transform:rotate(45deg);}
-  .faq-item.open .faq-q{color:var(--primary);}
-  .faq-a{max-height:0; overflow:hidden; transition:max-height .35s ease; font-size:14px; color:var(--text-muted);}
-  .faq-item.open .faq-a{max-height:200px; padding-top:13px;}
-
-  .cta-band{text-align:center; padding:70px 40px; border-radius:26px; background:linear-gradient(135deg, rgba(182,255,106,0.16), rgba(79,209,255,0.05)); position:relative; overflow:hidden; border:1px solid rgba(182,255,106,0.2);}
-  .cta-band h2{font-size:34px; margin-bottom:14px;}
-  .cta-band p{color:var(--text-muted); margin-bottom:28px;}
-
-  /* ===== AUTH MODAL ===== */
-  .auth-overlay{
-    position:fixed; inset:0; z-index:100; display:none;
-    align-items:center; justify-content:center; padding:20px;
-    background:rgba(6,9,7,0.72); backdrop-filter:blur(6px);
-  }
-  .auth-overlay.open{display:flex;}
-  .auth-modal-wrap{width:100%; max-width:400px;}
-  .auth-modal{padding:32px; position:relative;}
-  .auth-close{position:absolute; top:18px; right:18px; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer; transition:color .2s ease;}
-  .auth-close:hover{color:var(--text);}
-  .auth-tabs{display:flex; gap:6px; background:rgba(255,255,255,0.04); padding:4px; border-radius:12px; margin-bottom:18px;}
-  .auth-tab{flex:1; padding:9px; border:none; background:none; color:var(--text-muted); font-size:13.5px; font-weight:600; border-radius:9px; cursor:pointer; transition:all .2s ease;}
-  .auth-tab.active{background:rgba(182,255,106,0.14); color:var(--primary);}
-  .auth-sub{font-size:13.5px; color:var(--text-muted); margin-bottom:20px;}
-  .field-input{margin-bottom:14px;}
-  .field-input label{display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px;}
-  .field-input input{
-    width:100%; padding:12px 14px; border-radius:10px; font-size:14px;
-    background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text);
-    font-family:'Inter',sans-serif; outline:none; transition:border-color .2s ease;
-  }
-  .field-input input:focus{border-color:rgba(182,255,106,0.5);}
-  .auth-msg{font-size:12.5px; min-height:16px; margin-bottom:6px;}
-  .auth-msg.error{color:#ff8a8a;}
-  .auth-msg.success{color:var(--primary);}
-  .auth-divider{display:flex; align-items:center; gap:12px; margin:20px 0 16px; color:var(--text-muted); font-size:12px;}
-  .auth-divider::before, .auth-divider::after{content:""; flex:1; height:1px; background:var(--border);}
-  .auth-google{width:100%; display:flex; align-items:center; justify-content:center; gap:10px; opacity:.5; cursor:not-allowed;}
-
-  footer{border-top:1px solid var(--border); padding:56px 0 30px; position:relative; z-index:2;}
-  .foot-top{display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; gap:40px; padding-bottom:36px;}
-  .foot-tagline{font-size:13.5px; color:var(--text-muted); margin-top:14px; max-width:280px; line-height:1.6;}
-  .foot-sub{font-size:12.5px; color:#5c6b60; margin-top:10px;}
-  .foot-col{display:flex; flex-direction:column; gap:12px;}
-  .foot-heading{font-size:11.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;}
-  .foot-col a{font-size:13.5px; color:#C7D1C9; transition:color .2s ease;}
-  .foot-col a:hover{color:var(--primary);}
-  .foot-bottom{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; padding-top:22px; border-top:1px solid var(--border); font-size:12.5px; color:#5c6b60; }
-  @media (max-width:760px){ .foot-top{grid-template-columns:1fr 1fr;} }
-
-  @media (max-width:860px){
-    .hero-grid, .why-grid{grid-template-columns:1fr;}
-    .bento{grid-template-columns:1fr 1fr;}
-    .bento .card-lg{grid-column:span 2;}
-    .bento .card-sm{grid-column:span 2;}
-    .stat-strip{grid-template-columns:1fr 1fr;}
-    .pricing-grid{grid-template-columns:1fr;}
-    .payg-grid{grid-template-columns:1fr;}
-    .price-card.pop{transform:none;}
-    .nav-links{display:none;}
-    .hero h1{font-size:40px;}
-    .hero-ctas{flex-direction:column; align-items:stretch;}
-    .hero-ctas .btn{width:100%; white-space:nowrap; padding:14px 20px;}
-  }
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 12px 32px rgba(182,255,106,0.4);}
+  .plan-note{margin-top:18px; font-size:12.5px; color:var(--text-muted);}
+  .plan-note a{color:var(--primary); font-weight:600;}
 </style>
 </head>
 <body>
 
-<div id="spotlight"></div>
-
 <header>
-  <nav>
-    <div class="logo">
-      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
-        <defs><linearGradient id="lg1" x1="0" y1="0" x2="30" y2="30">
-          <stop offset="0%" stop-color="#B6FF6A"/><stop offset="100%" stop-color="#4FD1FF"/>
-        </linearGradient></defs>
-        <circle cx="15" cy="15" r="11" stroke="url(#lg1)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="52 15"/>
-        <circle cx="24" cy="9" r="2.4" fill="#B6FF6A"/>
-      </svg>
-      OrbitFlow
-    </div>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#languages">Languages</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-    </div>
-    <div class="nav-actions">
-      <div class="user-group" id="navUserGroup" style="display:flex;">
-        <a href="app.html" class="btn btn-primary btn-sm" style="padding:9px 18px; font-size:13.5px;">Editor</a>
-        <div class="avatar-wrap">
-          <button class="avatar-btn" id="avatarBtn" onclick="toggleAvatarMenu(event)"></button>
-          <div class="avatar-menu" id="avatarMenu">
-            <div class="avatar-email" id="avatarEmail"></div>
-            <a href="#" onclick="logout(event)">Log out</a>
-          </div>
-        </div>
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 30 30" fill="none">
+      <defs><linearGradient id="lg1" x1="0" y1="0" x2="30" y2="30"><stop offset="0%" stop-color="#B6FF6A"/><stop offset="100%" stop-color="#4FD1FF"/></linearGradient></defs>
+      <circle cx="15" cy="15" r="11" stroke="url(#lg1)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="52 15"/>
+      <circle cx="24" cy="9" r="2.4" fill="#B6FF6A"/>
+    </svg>
+    OrbitFlow
+  </div>
+  <div class="user-group">
+    <div class="avatar-wrap">
+      <button class="avatar-btn" id="avatarBtn" onclick="toggleAvatarMenu(event)"></button>
+      <div class="avatar-menu" id="avatarMenu">
+        <div class="avatar-email" id="avatarEmail"></div>
+        <a href="#" onclick="logout(event)">Log out</a>
       </div>
     </div>
-  </nav>
+  </div>
 </header>
 
-<section class="hero">
-  <div class="wrap hero-grid">
-    <div>
-      <span class="eyebrow hero-in" style="animation-delay:.05s"><span class="dot"></span> AI Captioning Platform</span>
-      <h1 class="hero-in" style="animation-delay:.15s">Captions that <em>speak</em><br>your language.</h1>
-      <p class="lead hero-in" style="animation-delay:.28s">Auto-generate accurate captions in Hindi, Hinglish and every major Desi language — in seconds, not hours.</p>
-      <div class="hero-ctas hero-in" style="animation-delay:.4s">
-        <a href="app.html" class="btn btn-primary">Open editor <span class="arrow">→</span></a>
-        <a href="#" class="btn btn-ghost">▷ Watch demo</a>
-      </div>
-      <div class="rating hero-in" style="animation-delay:.52s">
-        <div class="avatars"><span></span><span></span><span></span></div>
-        Built for creators across South Asia
-      </div>
-    </div>
-
-    <div class="glow-border hero-in" style="animation-delay:.3s;">
-      <div class="glass mock-panel tilt" id="tiltPanel">
-        <div class="mock-video">
-          <video src="https://znqujdatizxlcyheuscw.supabase.co/storage/v1/object/public/assets/hero-photo.mp4" preload="metadata" class="slot-media" autoplay muted loop playsinline></video>
-          <div class="media-overlay"></div>
-          <div class="mock-caption">कैसे हो आप <b>लोग</b>?</div>
-        </div>
-        <div class="mock-controls"><span>0:04</span><div class="track"><span></span></div><span>0:12</span></div>
-        <div class="mock-panel-fields">
-          <div class="field"><span class="label">Language</span><span>🇮🇳 Hindi</span></div>
-          <div class="field"><span class="label">Style</span><span>Bold Glow</span></div>
-          <div class="field"><span class="label">Translate to</span><span>English</span></div>
-        </div>
-      </div>
-    </div>
+<main>
+  <div class="card">
+    <div class="icon-badge">🎬</div>
+    <h1 id="greeting">Welcome back</h1>
+    <p>Your captioning workspace is ready. Upload a video to generate accurate Hindi &amp; Hinglish captions.</p>
+    <a href="app.html" class="btn-primary">Open Editor →</a>
+    <p class="plan-note">Free plan · 5 min transcription/month · <a href="index.html#pricing">Upgrade</a></p>
   </div>
-
-  <div class="wrap">
-    <div class="stat-strip reveal">
-      <div class="glass stat-chip"><div class="num" data-count="15">0</div><div class="lbl">Desi languages</div></div>
-      <div class="glass stat-chip"><div class="num" data-count="97" data-suffix="%">0</div><div class="lbl">Target accuracy</div></div>
-      <div class="glass stat-chip"><div class="num" data-count="30" data-suffix="+">0</div><div class="lbl">Caption styles</div></div>
-      <div class="glass stat-chip"><div class="num" data-count="2" data-suffix=" min">0</div><div class="lbl">Free tier length</div></div>
-    </div>
-  </div>
-</section>
-
-<section id="features">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Everything you need</span>
-      <h2>Built for perfect captions</h2>
-      <p>Powerful AI tools that save editing time and grow your audience.</p>
-    </div>
-    <div class="bento">
-      <div class="glass feature-card card-lg reveal reveal-1">
-        <div class="glow-spot"></div>
-        <div class="feature-icon">✎</div>
-        <h3>AI Transcription built for mixed-script speech</h3>
-        <p>Accurate speech-to-text for Hindi, Hinglish and 15+ Desi languages — generated in seconds, edited word-by-word before you export.</p>
-        <div class="mini-mock">"कैसे हो आप लोग?" → detected in 1.4s</div>
-      </div>
-      <div class="glass feature-card card-sm reveal reveal-2"><div class="glow-spot"></div><div class="feature-icon">⇄</div><h3>Translation</h3><p>Turn any Desi-language video into English captions — or the other way around.</p></div>
-      <div class="glass feature-card card-sm reveal reveal-3"><div class="glow-spot"></div><div class="feature-icon">♪</div><h3>Audio Cleanup</h3><p>Reduce background noise and traffic hiss before captions get generated.</p></div>
-      <div class="glass feature-card reveal reveal-4"><div class="glow-spot"></div><div class="feature-icon">⏱</div><h3>Auto Sync</h3><p>Captions lock to your video's timing automatically.</p></div>
-      <div class="glass feature-card reveal reveal-5"><div class="glow-spot"></div><div class="feature-icon">✧</div><h3>Custom Styles</h3><p>Tune every word's colour, size and timing.</p></div>
-      <div class="glass feature-card reveal reveal-6"><div class="glow-spot"></div><div class="feature-icon">↓</div><h3>Export Anywhere</h3><p>Burned-in video, or SRT captions.</p></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Why OrbitFlow</span>
-      <h2>Built for how India actually talks</h2>
-      <p>Mixed Hindi-English speech is where most captioning tools fall apart. OrbitFlow is tuned for exactly that.</p>
-    </div>
-    <div class="glass compare-card reveal">
-      <div class="compare-said">
-        <span class="compare-label">What was said</span>
-        <p class="compare-quote">"यार यeh feature try karo, it actually kaam karta hai"</p>
-      </div>
-      <div class="compare-grid">
-        <div class="compare-col bad">
-          <span class="compare-label">A typical English-first tool</span>
-          <p>yar ye future try Karo it actually come Karta hai</p>
-        </div>
-        <div class="compare-col good">
-          <span class="compare-label">OrbitFlow</span>
-          <p>यार यह feature try karo, it actually kaam karta hai</p>
-        </div>
-      </div>
-      <div class="compare-outputs">
-        <div class="out-box"><span class="compare-label">Roman</span><p>Yaar yeh feature try karo, it actually kaam karta hai</p></div>
-        <div class="out-box"><span class="compare-label">Native</span><p>यार यह फ़ीचर ट्राय करो, इट एक्चुअली काम करता है</p></div>
-        <div class="out-box"><span class="compare-label">English</span><p>Bro, try this feature — it actually works.</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="languages">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">100% Desi</span>
-      <h2>Every language your audience speaks</h2>
-      <p>Pick a language and OrbitFlow handles the rest.</p>
-    </div>
-    <div class="lang-strip reveal">
-      <span class="lang-chip on">हिंदी Hindi</span><span class="lang-chip">English</span><span class="lang-chip">اردو Urdu</span>
-      <span class="lang-chip">தமிழ் Tamil</span><span class="lang-chip">বাংলা Bengali</span><span class="lang-chip">ગુજરાતી Gujarati</span>
-      <span class="lang-chip">ਪੰਜਾਬੀ Punjabi</span><span class="lang-chip">తెలుగు Telugu</span><span class="lang-chip">मराठी Marathi</span>
-      <span class="lang-chip">ಕನ್ನಡ Kannada</span><span class="lang-chip">नेपाली Nepali</span><span class="lang-chip">+ 10 more</span>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Caption Styles</span>
-      <h2>A style for every kind of video</h2>
-      <p>Every style is fully tunable — colour, size, timing, all yours to change.</p>
-    </div>
-  </div>
-  <div class="marquee-wrap reveal">
-    <div class="marquee-track">
-      <div class="glass style-chip"><div class="name">Bold Beast</div><div class="tag">High-energy, punchy</div></div>
-      <div class="glass style-chip"><div class="name">Clean Glow</div><div class="tag">Soft neon highlight</div></div>
-      <div class="glass style-chip"><div class="name">Minimal</div><div class="tag">Understated, readable</div></div>
-      <div class="glass style-chip"><div class="name">Bubble</div><div class="tag">Rounded, playful</div></div>
-      <div class="glass style-chip"><div class="name">Word Pop</div><div class="tag">One word at a time</div></div>
-      <div class="glass style-chip"><div class="name">Studio</div><div class="tag">Broadcast lower-third</div></div>
-      <!-- duplicate set for seamless loop -->
-      <div class="glass style-chip"><div class="name">Bold Beast</div><div class="tag">High-energy, punchy</div></div>
-      <div class="glass style-chip"><div class="name">Clean Glow</div><div class="tag">Soft neon highlight</div></div>
-      <div class="glass style-chip"><div class="name">Minimal</div><div class="tag">Understated, readable</div></div>
-      <div class="glass style-chip"><div class="name">Bubble</div><div class="tag">Rounded, playful</div></div>
-      <div class="glass style-chip"><div class="name">Word Pop</div><div class="tag">One word at a time</div></div>
-      <div class="glass style-chip"><div class="name">Studio</div><div class="tag">Broadcast lower-third</div></div>
-    </div>
-  </div>
-  <div class="wrap" style="text-align:center; margin-top:36px;">
-    <a href="#pricing" class="btn btn-primary reveal">Open editor and try them all <span class="arrow">→</span></a>
-  </div>
-</section>
-
-<section id="pricing">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Flexible pricing</span>
-      <h2>Pay per video. <em class="accent-text">Or own the pipeline.</em></h2>
-      <p>No storage plans, no lock-in. Your video is processed and deleted — nothing sits on our servers.<br>Need just one video? Pay per export below. Posting regularly? Pick a monthly plan.</p>
-    </div>
-
-    <div class="payg-grid reveal reveal-1">
-      <div class="glow-border">
-        <div class="glass payg-card featured">
-          <span class="compare-label" style="color:var(--primary)">First export offer</span>
-          <div class="payg-price">₹19 <span class="payg-tag">first export</span></div>
-          <p class="payg-desc">Your first watermark-free HD export. One per account — then ₹79 for a week of unlimited clean exports. Pay via UPI, ready in seconds.</p>
-          <a href="app.html" class="btn btn-primary" style="width:100%">Claim your ₹19 export <span class="arrow">→</span></a>
-        </div>
-      </div>
-      <div class="glass payg-card">
-        <span class="compare-label">Not ready for monthly?</span>
-        <div class="payg-price">₹79 <span class="payg-tag">/ 7 days</span></div>
-        <p class="payg-desc">Week Pass — 7 days of Creator-tier access. One-time UPI payment, no auto-renew, no card needed.</p>
-        <ul class="payg-list">
-          <li>Unlimited watermark-free exports</li><li>12 min transcription</li><li>1080p HD export</li><li>All caption styles & fonts</li>
-        </ul>
-        <a href="app.html" class="btn btn-ghost" style="width:100%">Get the ₹79 Week Pass <span class="arrow">→</span></a>
-      </div>
-    </div>
-
-    <div class="section-head reveal" style="margin-top:70px;">
-      <span class="eyebrow">Monthly plans</span>
-      <h2>Start free, upgrade when ready</h2>
-      <p>No card needed to try it out.</p>
-    </div>
-    <div class="pricing-grid">
-      <div class="glass price-card reveal reveal-1">
-        <h3>Free</h3><div class="price-value">₹0<span>/month</span></div><div class="price-sub">For trying it out</div>
-        <ul class="price-list"><li>All languages</li><li>5 minutes of transcription / month</li><li>Max video length: 2 min</li><li>720p export with watermark</li></ul>
-        <a href="app.html" class="btn btn-ghost" style="width:100%">Open editor</a>
-      </div>
-      <div class="glow-border reveal reveal-2">
-        <div class="glass price-card pop" style="border:none;">
-          <span class="badge">Most popular</span>
-          <h3>Creator</h3><div class="price-value">₹399<span>/month</span></div><div class="price-sub">For regular creators</div>
-          <ul class="price-list"><li>Everything in Free, plus</li><li>2 hours of transcription / month</li><li>Max video length: 10 min</li><li>1080p export, no watermark</li><li>All caption styles unlocked</li></ul>
-          <a href="app.html" class="btn btn-primary" style="width:100%">Open editor</a>
-        </div>
-      </div>
-      <div class="glass price-card reveal reveal-3">
-        <h3>Studio</h3><div class="price-value">₹999<span>/month</span></div><div class="price-sub">For teams & agencies</div>
-        <ul class="price-list"><li>Everything in Creator, plus</li><li>10 hours of transcription / month</li><li>Max video length: 30 min</li><li>4K export</li><li>SRT export & priority support</li></ul>
-        <a href="app.html" class="btn btn-ghost" style="width:100%">Open editor</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap why-grid">
-    <div class="reveal reveal-1">
-      <span class="eyebrow">Why we built this</span>
-      <h2 style="font-size:32px; margin-bottom:16px;">Made by Desi creators, for Desi creators.</h2>
-      <p>Every captioning tool we tried was built for English. Hindi and Hinglish always came out garbled — half the words missing, the rest misspelled.</p>
-      <p>So we're building OrbitFlow: a captioning tool that actually understands how South Asians speak — mixed languages, mixed scripts, and all.</p>
-      <div class="stat-row">
-        <div class="glass stat-box"><div class="num">15+</div><div class="lbl">Desi languages</div></div>
-        <div class="glass stat-box"><div class="num">2 min</div><div class="lbl">Free tier video length</div></div>
-      </div>
-    </div>
-    <div class="glow-border reveal reveal-2">
-      <div class="glass" style="padding:30px; border:none;">
-        <div class="mock-video" style="aspect-ratio:4/3;">
-          <img src="https://znqujdatizxlcyheuscw.supabase.co/storage/v1/object/public/assets/why-photo.jpg" loading="lazy" alt="Creator talking to camera" class="slot-media" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div class="media-overlay"></div>
-          <div class="slot-fallback"><span>🎥</span><p>Drop <code>why-photo.jpg</code><br>next to this HTML file</p></div>
-          <div class="mock-caption">हैलो गाइज, <b>कैसे</b> हो आप?</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="faq">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">FAQ</span>
-      <h2>Frequently asked questions</h2>
-    </div>
-    <div class="faq reveal">
-      <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How accurate is the transcription? <span class="plus">+</span></div><div class="faq-a">We're actively tuning accuracy for Hindi and Hinglish specifically, since most tools weren't built for mixed-script speech.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can I edit the captions after they're generated? <span class="plus">+</span></div><div class="faq-a">Yes — every word is editable before you export.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What's included in the free plan? <span class="plus">+</span></div><div class="faq-a">All languages, 5 minutes of transcription a month, and 720p export with a watermark.</div></div>
-      <div class="faq-item"><div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How do I cancel my subscription? <span class="plus">+</span></div><div class="faq-a">Anytime, from your account settings — no questions asked.</div></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="cta-band reveal">
-      <h2>Ready to caption your first video?</h2>
-      <p>No card needed. Get started in under a minute.</p>
-      <a href="app.html" class="btn btn-primary">Open editor <span class="arrow">→</span></a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap">
-    <div class="foot-top">
-      <div class="foot-brand">
-        <div class="logo">
-          <svg width="26" height="26" viewBox="0 0 30 30" fill="none">
-            <circle cx="15" cy="15" r="11" stroke="url(#lg1)" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="52 15"/>
-            <circle cx="24" cy="9" r="2.4" fill="#B6FF6A"/>
-          </svg>
-          OrbitFlow
-        </div>
-        <p class="foot-tagline">Upload a video, get accurate Hinglish captions, export. That's the whole product.</p>
-        <p class="foot-sub">Built in India, for Indian creators.</p>
-      </div>
-      <div class="foot-col">
-        <span class="foot-heading">Product</span>
-        <a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="#">Editor</a>
-      </div>
-      <div class="foot-col">
-        <span class="foot-heading">Company</span>
-        <a href="#">About</a><a href="#">Support</a>
-      </div>
-      <div class="foot-col">
-        <span class="foot-heading">Legal</span>
-        <a href="#">Privacy</a><a href="#">Terms</a>
-      </div>
-    </div>
-    <div class="foot-bottom">
-      <span>© 2026 OrbitFlow. All rights reserved.</span>
-      <span>Payments via UPI, cards & netbanking · Cancel anytime</span>
-    </div>
-  </div>
-</footer>
+</main>
 
 <script>
-  // scroll reveal
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-  }, { threshold: 0.15 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-
-  // 3D tilt hero panel
-  const tiltPanel = document.getElementById('tiltPanel');
-  const tiltWrap = tiltPanel.closest('.glow-border');
-  tiltWrap.addEventListener('mousemove', (e) => {
-    const r = tiltWrap.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    tiltPanel.style.transform = `rotateY(${x * 8}deg) rotateX(${-y * 8}deg) translateZ(10px)`;
-  });
-  tiltWrap.addEventListener('mouseleave', () => { tiltPanel.style.transform = 'rotateY(0) rotateX(0)'; });
-
-  // cursor spotlight
-  const spot = document.getElementById('spotlight');
-  window.addEventListener('mousemove', (e) => {
-    spot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%,-50%)`;
-  });
-
-  // count-up stats
-  const counters = document.querySelectorAll('.num[data-count]');
-  const counterIO = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target;
-      const target = parseInt(el.dataset.count, 10);
-      const suffix = el.dataset.suffix || '';
-      const dur = 1200; const start = performance.now();
-      function tick(now){
-        const p = Math.min(1, (now - start) / dur);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = Math.round(eased * target) + suffix;
-        if (p < 1) requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-      counterIO.unobserve(el);
-    });
-  }, { threshold: 0.5 });
-  counters.forEach(el => counterIO.observe(el));
-
-  // ===== SUPABASE AUTH (logged-in home — no login form here) =====
   const SUPABASE_URL = "https://znqujdatizxlcyheuscw.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_xac6DqPJuwkVc6UFTJ30rQ_Z6f1P_kR";
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -705,7 +115,6 @@
     await sb.auth.signOut();
     window.location.href = 'index.html';
   }
-
   function toggleAvatarMenu(e) {
     e.preventDefault();
     document.getElementById('avatarMenu').classList.toggle('open');
@@ -715,18 +124,14 @@
     if (wrap && !wrap.contains(e.target)) document.getElementById('avatarMenu').classList.remove('open');
   });
 
-  // Gate: this page is for logged-in users only.
   (async function gate() {
     const { data: { session } } = await sb.auth.getSession();
-    if (!session || !session.user) {
-      window.location.href = 'index.html';
-      return;
-    }
+    if (!session || !session.user) { window.location.href = 'index.html'; return; }
     const email = session.user.email;
     document.getElementById('avatarBtn').textContent = email.charAt(0).toUpperCase();
     document.getElementById('avatarEmail').textContent = email;
+    document.getElementById('greeting').textContent = `Welcome back, ${email.split('@')[0]}`;
   })();
 </script>
-
 </body>
 </html>
