@@ -186,12 +186,14 @@
     opacity:0; transition:opacity .15s ease;
   }
   .caption-overlay.show{opacity:1;}
-  @keyframes popIn{0%{transform:translateX(-50%) scale(.6); opacity:0;} 60%{transform:translateX(-50%) scale(1.08); opacity:1;} 100%{transform:translateX(-50%) scale(1); opacity:1;}}
-  @keyframes glowPulse{0%{transform:translateX(-50%); opacity:0; filter:brightness(2.2);} 100%{transform:translateX(-50%); opacity:1; filter:brightness(1);}}
-  @keyframes slideUp{0%{transform:translate(-50%,14px); opacity:0;} 100%{transform:translate(-50%,0); opacity:1;}}
-  .caption-overlay.anim-pop{animation:popIn .32s cubic-bezier(.34,1.56,.64,1);}
-  .caption-overlay.anim-glow{animation:glowPulse .35s ease-out;}
-  .caption-overlay.anim-slide{animation:slideUp .28s cubic-bezier(.16,.8,.3,1);}
+  .kword{ display:inline-block; opacity:.5; transform:scale(1); transition:transform .15s cubic-bezier(.34,1.56,.64,1), opacity .15s ease, color .15s ease; }
+  .kword-active{opacity:1; transform:scale(1.16);}
+  .style-bold-beast .kword-active, .style-mrbeast .kword-active, .style-hormozi .kword-active{color:var(--primary);}
+  .style-clean .kword-active, .style-aura .kword-active{color:#fff; text-shadow:0 0 14px rgba(182,255,106,0.9);}
+  .style-word-pop .kword-active, .style-highlighted .kword-active{color:var(--primary);}
+  .style-bubble .kword-active{color:#0B0F0C; text-shadow:none;}
+  @keyframes popIn{0%{transform:translateX(-50%) scale(.9); opacity:0;} 100%{transform:translateX(-50%) scale(1); opacity:1;}}
+  .caption-overlay.show{animation:popIn .2s ease-out;}
 
   /* ---- style presets ---- */
   .style-bold-beast{ font-family:'Inter',sans-serif; font-weight:800; font-size:17px; color:#fff; background:#000; padding:4px 10px; border-radius:4px; text-transform:uppercase; letter-spacing:.01em; }
@@ -244,6 +246,43 @@
   .seg-text:focus{background:rgba(182,255,106,0.08); box-shadow:0 0 0 1px rgba(182,255,106,0.35);}
   .error-box{margin-top:16px; padding:14px 18px; border-radius:12px; background:rgba(255,90,90,0.08); border:1px solid rgba(255,90,90,0.25); color:#E39A9A; font-size:13.5px; max-width:560px;}
 
+  /* ===== ready-to-edit card ===== */
+  .ready-card{ margin-top:16px; padding:16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .ready-thumb{width:90px; height:60px; border-radius:8px; object-fit:cover; background:#0c110d;}
+  .ready-info{flex:1; min-width:120px;}
+  .ready-name{font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;}
+  .ready-sub{font-size:12px; color:var(--text-muted); margin-top:2px;}
+
+  /* ===== prep modal (reuses auth-overlay pattern) ===== */
+  .auth-overlay{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(6,9,7,0.72); backdrop-filter:blur(6px); }
+  .auth-overlay.open{display:flex;}
+  .auth-modal{padding:28px; position:relative;}
+  .auth-close{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-muted); font-size:16px; cursor:pointer;}
+  .auth-close:hover{color:var(--text);}
+  .auth-sub{font-size:13.5px; color:var(--text-muted);}
+  .field-input{margin-bottom:14px;}
+  .field-input label{display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:6px;}
+  .field-input select{
+    width:100%; padding:11px 14px; border-radius:10px; font-size:14px;
+    background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text);
+    font-family:'Inter',sans-serif; outline:none; cursor:pointer;
+  }
+  .glow-border{ position:relative; border-radius:calc(var(--radius) + 3px); padding:1.5px;
+    background:conic-gradient(from var(--angle,0deg), var(--primary), #4FD1FF, var(--secondary), var(--primary));
+    animation:spin 6s linear infinite; }
+  @property --angle{syntax:'<angle>'; initial-value:0deg; inherits:false;}
+  @keyframes spin{to{--angle:360deg;}}
+  .glow-border > .glass{border-radius:var(--radius);}
+
+  /* ===== editor toolbar ===== */
+  .editor-toolbar{display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+  .toolbar-back{background:none; border:none; color:var(--text-muted); font-size:13.5px; cursor:pointer;}
+  .toolbar-back:hover{color:var(--text);}
+  .toolbar-name{font-size:13.5px; font-weight:600;}
+  .toolbar-spacer{flex:1;}
+  .res-btns{display:flex; gap:4px;}
+  .btn-sm{padding:8px 16px; font-size:13px;}
+
   @media (max-width:800px){
     .app-shell{flex-direction:column;}
     .sidebar{width:100%; flex-direction:row; overflow-x:auto; border-right:none; border-bottom:1px solid var(--border); align-items:center;}
@@ -289,42 +328,43 @@
     </div>
   </aside>
 
-  <main class="main">
+  <main class="main" id="dashboardMain">
     <span class="eyebrow-sm fade-in" style="animation-delay:.05s">Dashboard</span>
     <h1 id="greeting" class="fade-in" style="animation-delay:.12s">Good to see you 👋</h1>
     <p class="sub fade-in" style="animation-delay:.18s">Upload a video and let OrbitFlow <em style="font-style:italic; color:var(--primary);">generate</em> your captions.</p>
 
-    <div class="upload-label fade-in" style="animation-delay:.24s">Spoken language</div>
-    <select id="langSelect" class="lang-select fade-in" style="animation-delay:.26s">
-      <option value="hi" selected>Hindi (Devanagari — हिंदी)</option>
-      <option value="hi-roman">Hinglish (Roman — Hinglish)</option>
-      <option value="">Auto-detect</option>
-      <option value="en">English</option>
-      <option value="ta">Tamil</option>
-      <option value="te">Telugu</option>
-      <option value="bn">Bengali</option>
-      <option value="mr">Marathi</option>
-      <option value="gu">Gujarati</option>
-      <option value="pa">Punjabi</option>
-      <option value="kn">Kannada</option>
-      <option value="ml">Malayalam</option>
-      <option value="ur">Urdu</option>
-    </select>
-
-    <label class="translate-toggle fade-in" style="animation-delay:.28s">
-      <input type="checkbox" id="translateToggle">
-      <span>Translate captions to English</span>
-    </label>
-
-    <div class="upload-label fade-in" style="animation-delay:.3s">Upload a video</div>
-    <div class="dropzone fade-in" id="dropzone" style="animation-delay:.3s">
+    <div class="upload-label fade-in" style="animation-delay:.24s">Upload a video</div>
+    <div class="dropzone fade-in" id="dropzone" style="animation-delay:.26s">
       <input type="file" accept="video/mp4,video/quicktime" id="fileInput">
       <div class="icon">⬆️</div>
       <div class="title">Drop your video here</div>
       <div class="hint">or click to browse — MP4/MOV, up to 30 MB for now</div>
     </div>
 
+    <!-- Ready-to-edit card (shows right after picking a file, before any processing) -->
+    <div id="readyCard" class="glass ready-card" style="display:none;">
+      <video id="readyThumb" class="ready-thumb" muted></video>
+      <div class="ready-info">
+        <div class="ready-name" id="readyName">—</div>
+        <div class="ready-sub">Ready to caption</div>
+      </div>
+      <button class="btn btn-primary" onclick="openPrepModal()">Start Editing <span class="arrow">→</span></button>
+    </div>
+
     <div id="previewArea" class="preview-wrap" style="display:none;">
+      <div class="editor-toolbar">
+        <button class="toolbar-back" onclick="backToDashboard()">← Back</button>
+        <span class="toolbar-name" id="toolbarName">—</span>
+        <div class="toolbar-spacer"></div>
+        <div class="res-btns">
+          <button class="aspect-btn active">1080p</button>
+          <button class="aspect-btn">720p</button>
+        </div>
+        <button class="btn btn-ghost btn-sm" disabled title="Coming soon">Save</button>
+        <button class="btn btn-ghost btn-sm" disabled title="Coming soon">SRT</button>
+        <button class="btn btn-primary btn-sm" disabled title="Coming soon">Export <span class="soon-tag">Soon</span></button>
+      </div>
+
       <div id="statusLine" class="status-line" style="display:none;">
         <span class="spinner"></span> <span id="statusText">Transcribing…</span>
         <span id="statusPct" style="margin-left:auto; color:var(--primary); font-weight:700;"></span>
@@ -335,7 +375,13 @@
       <div class="editor-grid">
         <!-- LEFT: captions list -->
         <div class="glass editor-col captions-col">
-          <div class="editor-col-head">Captions</div>
+          <div class="editor-col-head aspect-row">
+            <span>Captions</span>
+            <div class="aspect-btns">
+              <button class="aspect-btn active" id="lines1Btn" onclick="setLines(1)">1 Line</button>
+              <button class="aspect-btn" id="lines2Btn" onclick="setLines(2)">2 Lines</button>
+            </div>
+          </div>
           <div id="transcriptList" class="transcript-list"></div>
         </div>
 
@@ -437,6 +483,7 @@
   const errorBox = document.getElementById('errorBox');
   const transcriptList = document.getElementById('transcriptList');
   let currentSegments = [];
+  let currentWords = [];
   let selectedStyle = 'bold-beast';
 
   document.getElementById('styleSearch').addEventListener('input', (e) => {
@@ -464,25 +511,41 @@
   });
 
   let lastSegStart = null;
+  let activeWords = [];
+
+  function getWordsForSegment(seg) {
+    const real = currentWords.filter(w => w.start >= seg.start - 0.08 && w.start <= seg.end + 0.08);
+    if (real.length > 0) return real;
+    // Fallback: no real word timestamps (e.g. translate mode) — synthesize
+    // evenly-spaced timings so the kinetic effect still works.
+    const tokens = seg.text.trim().split(/\s+/).filter(Boolean);
+    const span = (seg.end - seg.start) / Math.max(1, tokens.length);
+    return tokens.map((tok, i) => ({ word: tok, start: seg.start + i * span, end: seg.start + (i + 1) * span }));
+  }
+
   function setupCaptionSync() {
     const overlay = document.getElementById('captionOverlay');
     overlay.className = 'caption-overlay style-' + selectedStyle;
     previewVideo.addEventListener('timeupdate', () => {
       const t = previewVideo.currentTime;
       const seg = currentSegments.find(s => t >= s.start && t <= s.end);
+
       if (seg) {
         if (seg.start !== lastSegStart) {
           lastSegStart = seg.start;
-          overlay.textContent = seg.text;
-          const animClass = styleAnimMap[selectedStyle] || 'anim-slide';
-          overlay.classList.remove('anim-pop', 'anim-glow', 'anim-slide', 'show');
-          void overlay.offsetWidth; // force reflow to restart animation
-          overlay.classList.add('show', animClass);
+          const segWords = getWordsForSegment(seg);
+          overlay.innerHTML = segWords.map(w => `<span class="kword">${w.word}</span>`).join(' ');
+          activeWords = Array.from(overlay.querySelectorAll('.kword')).map((el, i) => ({ el, start: segWords[i].start, end: segWords[i].end }));
+          overlay.classList.remove('show');
+          void overlay.offsetWidth;
+          overlay.classList.add('show');
         }
+        activeWords.forEach(w => w.el.classList.toggle('kword-active', t >= w.start && t <= w.end));
       } else {
         lastSegStart = null;
         overlay.classList.remove('show');
       }
+
       // highlight matching timeline block
       document.querySelectorAll('.timeline-block').forEach((b, i) => {
         b.classList.toggle('active', seg && currentSegments[i] === seg);
@@ -524,16 +587,14 @@
   });
   dz.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
 
+  let selectedFile = null;
+
   async function handleFile(file) {
     if (!file) return;
     errorBox.style.display = 'none';
-    transcriptList.innerHTML = '';
-    currentSegments = [];
-    document.getElementById('styleGallery').style.display = 'none';
-    document.getElementById('captionOverlay').classList.remove('show');
+    document.getElementById('readyCard').style.display = 'none';
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      previewArea.style.display = 'block';
       errorBox.style.display = 'block';
       errorBox.textContent = `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max allowed is 200 MB for now.`;
       return;
@@ -542,16 +603,54 @@
     try {
       const duration = await getVideoDuration(file);
       if (duration > MAX_DURATION_SEC) {
-        previewArea.style.display = 'block';
         errorBox.style.display = 'block';
         errorBox.textContent = `Video is ${Math.round(duration)}s long. Max allowed is 2 minutes for now.`;
         return;
       }
-    } catch (e) {
-      // If duration can't be read, let it through — size cap still protects us.
-    }
+    } catch (e) { /* size cap still protects us */ }
 
+    selectedFile = file;
+    const url = URL.createObjectURL(file);
+    document.getElementById('readyThumb').src = url;
+    document.getElementById('readyName').textContent = file.name;
+    document.getElementById('readyCard').style.display = 'flex';
+  }
+
+  function openPrepModal() {
+    if (!selectedFile) return;
+    document.getElementById('prepThumb').src = URL.createObjectURL(selectedFile);
+    document.getElementById('prepOverlay').classList.add('open');
+  }
+  function closePrepModal() {
+    document.getElementById('prepOverlay').classList.remove('open');
+  }
+  function backToDashboard() {
+    previewArea.style.display = 'none';
+    document.getElementById('dashboardMain').style.display = 'block';
+  }
+  function setLines(n) {
+    document.getElementById('lines1Btn').classList.toggle('active', n === 1);
+    document.getElementById('lines2Btn').classList.toggle('active', n === 2);
+    document.getElementById('captionOverlay').style.maxWidth = n === 1 ? '96%' : '70%';
+    document.getElementById('captionOverlay').style.whiteSpace = n === 1 ? 'nowrap' : 'normal';
+    document.getElementById('captionOverlay').style.overflow = n === 1 ? 'hidden' : 'visible';
+    document.getElementById('captionOverlay').style.textOverflow = n === 1 ? 'ellipsis' : 'clip';
+  }
+
+  async function startTranscription() {
+    const file = selectedFile;
+    if (!file) return;
+    closePrepModal();
+
+    transcriptList.innerHTML = '';
+    currentSegments = [];
+    currentWords = [];
+    document.getElementById('styleGallery').style.display = 'none';
+    document.getElementById('captionOverlay').classList.remove('show');
+
+    document.getElementById('dashboardMain').style.display = 'none';
     previewArea.style.display = 'block';
+    document.getElementById('toolbarName').textContent = file.name;
     previewVideo.src = URL.createObjectURL(file);
     statusLine.style.display = 'flex';
     const progressBarWrap = document.getElementById('progressBarWrap');
@@ -562,6 +661,11 @@
     statusText.textContent = `Extracting audio (${(file.size / 1024 / 1024).toFixed(1)} MB video)…`;
     statusPct.textContent = '0%';
     const t0 = performance.now();
+
+    const rawLang = document.getElementById('langSelect').value;
+    const script = document.getElementById('scriptSelect').value;
+    const languageParam = (rawLang === 'hi' && script === 'roman') ? 'hi-roman' : rawLang;
+    const translateOn = document.getElementById('translateToggle').checked;
 
     try {
       const { data: { session } } = await sb.auth.getSession();
@@ -596,8 +700,8 @@
         xhr.onerror = () => reject(new Error('Network error while uploading'));
         const fd = new FormData();
         fd.append('file', audioBlob, 'audio.webm');
-        fd.append('language', document.getElementById('langSelect').value);
-        fd.append('translate', document.getElementById('translateToggle').checked ? 'true' : 'false');
+        fd.append('language', languageParam);
+        fd.append('translate', translateOn ? 'true' : 'false');
         xhr.send(fd);
       });
 
@@ -621,6 +725,7 @@
       });
 
       currentSegments = data.segments;
+      currentWords = data.words || [];
       document.getElementById('styleGallery').style.display = 'block';
       setupCaptionSync();
       renderTimeline();
@@ -690,5 +795,50 @@
   }
   loadProjects();
 </script>
+<div id="prepOverlay" class="auth-overlay" onclick="if(event.target===this) closePrepModal()">
+  <div class="glow-border" style="max-width:440px; width:100%;">
+    <div class="glass auth-modal">
+      <button class="auth-close" onclick="closePrepModal()">✕</button>
+      <h2 style="font-size:19px; font-family:'Playfair Display',serif; margin-bottom:4px;">Prepare Your Media</h2>
+      <p class="auth-sub" style="margin-bottom:18px;">Select a language to transcribe your media.</p>
+
+      <video id="prepThumb" class="ready-thumb" style="width:100%; margin-bottom:18px;" muted controls></video>
+
+      <div class="field-input">
+        <label>What language is spoken?</label>
+        <select id="langSelect">
+          <option value="" selected>Auto-detect</option>
+          <option value="hi">Hindi</option>
+          <option value="en">English</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="bn">Bengali</option>
+          <option value="mr">Marathi</option>
+          <option value="gu">Gujarati</option>
+          <option value="pa">Punjabi</option>
+          <option value="kn">Kannada</option>
+          <option value="ml">Malayalam</option>
+          <option value="ur">Urdu</option>
+        </select>
+      </div>
+
+      <div class="field-input">
+        <label>Writing system used?</label>
+        <select id="scriptSelect">
+          <option value="native" selected>Native script</option>
+          <option value="roman">Romanised (Latin)</option>
+        </select>
+      </div>
+
+      <label class="translate-toggle" style="margin-top:2px;">
+        <input type="checkbox" id="translateToggle">
+        <span>Translate captions to English</span>
+      </label>
+
+      <button class="btn btn-primary" style="width:100%; margin-top:16px;" onclick="startTranscription()">Generate Transcription <span class="arrow">→</span></button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
