@@ -166,6 +166,18 @@
   .project-meta{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
 
   .preview-wrap{margin-top:24px;}
+  .editor-grid{display:grid; grid-template-columns:280px 1fr 300px; gap:16px; align-items:start;}
+  .editor-col{padding:18px; max-height:640px; overflow-y:auto;}
+  .editor-col-head{font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;}
+  .aspect-row{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+  .aspect-btns{display:flex; gap:6px;}
+  .aspect-btn{padding:5px 12px; border-radius:7px; font-size:11.5px; font-weight:600; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-muted); cursor:pointer;}
+  .aspect-btn.active{background:rgba(182,255,106,0.12); color:var(--primary); border-color:rgba(182,255,106,0.4);}
+  .center-col{padding:16px; max-height:none;}
+  .timeline-track{display:flex; gap:3px; margin-top:14px; height:34px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; padding:4px; overflow-x:auto;}
+  .timeline-block{flex:0 0 auto; min-width:26px; background:linear-gradient(135deg,var(--primary),var(--secondary)); opacity:.5; border-radius:4px; cursor:pointer; transition:opacity .15s ease;}
+  .timeline-block:hover, .timeline-block.active{opacity:1;}
+  @media (max-width:1100px){ .editor-grid{grid-template-columns:1fr;} .editor-col{max-height:none;} }
   .video-frame{position:relative; max-width:360px; border-radius:14px; overflow:hidden;}
   .preview-video{width:100%; border:1px solid var(--border); border-radius:14px; display:block;}
   .caption-overlay{
@@ -174,6 +186,12 @@
     opacity:0; transition:opacity .15s ease;
   }
   .caption-overlay.show{opacity:1;}
+  @keyframes popIn{0%{transform:translateX(-50%) scale(.6); opacity:0;} 60%{transform:translateX(-50%) scale(1.08); opacity:1;} 100%{transform:translateX(-50%) scale(1); opacity:1;}}
+  @keyframes glowPulse{0%{transform:translateX(-50%); opacity:0; filter:brightness(2.2);} 100%{transform:translateX(-50%); opacity:1; filter:brightness(1);}}
+  @keyframes slideUp{0%{transform:translate(-50%,14px); opacity:0;} 100%{transform:translate(-50%,0); opacity:1;}}
+  .caption-overlay.anim-pop{animation:popIn .32s cubic-bezier(.34,1.56,.64,1);}
+  .caption-overlay.anim-glow{animation:glowPulse .35s ease-out;}
+  .caption-overlay.anim-slide{animation:slideUp .28s cubic-bezier(.16,.8,.3,1);}
 
   /* ---- style presets ---- */
   .style-bold-beast{ font-family:'Inter',sans-serif; font-weight:800; font-size:17px; color:#fff; background:#000; padding:4px 10px; border-radius:4px; text-transform:uppercase; letter-spacing:.01em; }
@@ -307,10 +325,6 @@
     </div>
 
     <div id="previewArea" class="preview-wrap" style="display:none;">
-      <div class="video-frame">
-        <video id="previewVideo" class="preview-video" controls></video>
-        <div id="captionOverlay" class="caption-overlay style-clean"></div>
-      </div>
       <div id="statusLine" class="status-line" style="display:none;">
         <span class="spinner"></span> <span id="statusText">Transcribing…</span>
         <span id="statusPct" style="margin-left:auto; color:var(--primary); font-weight:700;"></span>
@@ -318,26 +332,51 @@
       <div id="progressBarWrap" class="progress-bar-wrap" style="display:none;"><div id="progressBarFill" class="progress-bar-fill"></div></div>
       <div id="errorBox" class="error-box" style="display:none;"></div>
 
-      <div id="styleGallery" class="style-gallery" style="display:none;">
-        <div class="upload-label" style="margin-top:20px;">Caption style</div>
-        <input type="text" id="styleSearch" class="style-search" placeholder="🔍 Find a template…">
-        <div class="style-grid" id="styleGrid">
-          <div class="glass style-card selected" data-style="bold-beast"><div class="style-preview style-bold-beast">SAMPLE</div><div class="style-card-name">Bold Beast</div><div class="tag-row"><span class="tag">Bold</span></div></div>
-          <div class="glass style-card" data-style="clean"><div class="style-preview style-clean">Sample</div><div class="style-card-name">Clean Glow</div><div class="tag-row"><span class="tag tag-popular">Popular</span></div></div>
-          <div class="glass style-card" data-style="minimal"><div class="style-preview style-minimal">Sample</div><div class="style-card-name">Minimal</div><div class="tag-row"><span class="tag">Clean</span></div></div>
-          <div class="glass style-card" data-style="bubble"><div class="style-preview style-bubble">Sample</div><div class="style-card-name">Bubble</div><div class="tag-row"><span class="tag">Playful</span></div></div>
-          <div class="glass style-card" data-style="word-pop"><div class="style-preview style-word-pop">Sample</div><div class="style-card-name">Word Pop</div><div class="tag-row"><span class="tag">Bold</span><span class="tag">Kinetic</span></div></div>
-          <div class="glass style-card" data-style="studio"><div class="style-preview style-studio">Sample</div><div class="style-card-name">Studio</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="mrbeast"><div class="style-preview style-mrbeast">SAMPLE</div><div class="style-card-name">MrBeast</div><div class="tag-row"><span class="tag">Bold</span><span class="tag">Shadow</span></div></div>
-          <div class="glass style-card" data-style="hormozi"><div class="style-preview style-hormozi">SAMPLE</div><div class="style-card-name">Hormozi</div><div class="tag-row"><span class="tag tag-popular">Popular</span></div></div>
-          <div class="glass style-card" data-style="aura"><div class="style-preview style-aura">Sample</div><div class="style-card-name">Aura</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="swiss"><div class="style-preview style-swiss">Sample</div><div class="style-card-name">Swiss</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="highlighted"><div class="style-preview style-highlighted">Sam<b>ple</b> text</div><div class="style-card-name">Highlighted Word</div><div class="tag-row"><span class="tag tag-new">New</span></div></div>
-          <div class="glass style-card" data-style="delhi"><div class="style-preview style-delhi">Sample</div><div class="style-card-name">Delhi</div><div class="tag-row"><span class="tag">Serif</span></div></div>
+      <div class="editor-grid">
+        <!-- LEFT: captions list -->
+        <div class="glass editor-col captions-col">
+          <div class="editor-col-head">Captions</div>
+          <div id="transcriptList" class="transcript-list"></div>
+        </div>
+
+        <!-- CENTER: preview + timeline -->
+        <div class="editor-col center-col">
+          <div class="editor-col-head aspect-row">
+            <span>Preview</span>
+            <div class="aspect-btns">
+              <button class="aspect-btn active" data-ratio="orig">Original</button>
+              <button class="aspect-btn" data-ratio="916">9:16</button>
+              <button class="aspect-btn" data-ratio="169">16:9</button>
+              <button class="aspect-btn" data-ratio="11">1:1</button>
+            </div>
+          </div>
+          <div class="video-frame">
+            <video id="previewVideo" class="preview-video" controls></video>
+            <div id="captionOverlay" class="caption-overlay style-clean"></div>
+          </div>
+          <div id="timelineTrack" class="timeline-track"></div>
+        </div>
+
+        <!-- RIGHT: templates -->
+        <div class="glass editor-col templates-col" id="styleGallery" style="display:none;">
+          <div class="editor-col-head">Templates</div>
+          <input type="text" id="styleSearch" class="style-search" placeholder="🔍 Find a template…">
+          <div class="style-grid" id="styleGrid">
+            <div class="glass style-card selected" data-style="bold-beast"><div class="style-preview style-bold-beast">SAMPLE</div><div class="style-card-name">Bold Beast</div><div class="tag-row"><span class="tag">Bold</span></div></div>
+            <div class="glass style-card" data-style="clean"><div class="style-preview style-clean">Sample</div><div class="style-card-name">Clean Glow</div><div class="tag-row"><span class="tag tag-popular">Popular</span></div></div>
+            <div class="glass style-card" data-style="minimal"><div class="style-preview style-minimal">Sample</div><div class="style-card-name">Minimal</div><div class="tag-row"><span class="tag">Clean</span></div></div>
+            <div class="glass style-card" data-style="bubble"><div class="style-preview style-bubble">Sample</div><div class="style-card-name">Bubble</div><div class="tag-row"><span class="tag">Playful</span></div></div>
+            <div class="glass style-card" data-style="word-pop"><div class="style-preview style-word-pop">Sample</div><div class="style-card-name">Word Pop</div><div class="tag-row"><span class="tag">Bold</span><span class="tag">Kinetic</span></div></div>
+            <div class="glass style-card" data-style="studio"><div class="style-preview style-studio">Sample</div><div class="style-card-name">Studio</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
+            <div class="glass style-card" data-style="mrbeast"><div class="style-preview style-mrbeast">SAMPLE</div><div class="style-card-name">MrBeast</div><div class="tag-row"><span class="tag">Bold</span><span class="tag">Kinetic</span></div></div>
+            <div class="glass style-card" data-style="hormozi"><div class="style-preview style-hormozi">SAMPLE</div><div class="style-card-name">Hormozi</div><div class="tag-row"><span class="tag tag-popular">Popular</span><span class="tag">Kinetic</span></div></div>
+            <div class="glass style-card" data-style="aura"><div class="style-preview style-aura">Sample</div><div class="style-card-name">Aura</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span><span class="tag">Kinetic</span></div></div>
+            <div class="glass style-card" data-style="swiss"><div class="style-preview style-swiss">Sample</div><div class="style-card-name">Swiss</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
+            <div class="glass style-card" data-style="highlighted"><div class="style-preview style-highlighted">Sam<b>ple</b> text</div><div class="style-card-name">Highlighted Word</div><div class="tag-row"><span class="tag tag-new">New</span><span class="tag">Kinetic</span></div></div>
+            <div class="glass style-card" data-style="delhi"><div class="style-preview style-delhi">Sample</div><div class="style-card-name">Delhi</div><div class="tag-row"><span class="tag">Serif</span><span class="tag">Kinetic</span></div></div>
+          </div>
         </div>
       </div>
-
-      <div id="transcriptList" class="transcript-list"></div>
     </div>
 
     <div class="projects-label fade-in" style="animation-delay:.36s">Recent projects</div>
@@ -408,6 +447,12 @@
     });
   });
 
+  const styleAnimMap = {
+    'bold-beast':'anim-pop', 'clean':'anim-glow', 'minimal':'anim-slide', 'bubble':'anim-slide',
+    'word-pop':'anim-pop', 'studio':'anim-slide', 'mrbeast':'anim-pop', 'hormozi':'anim-pop',
+    'aura':'anim-glow', 'swiss':'anim-slide', 'highlighted':'anim-slide', 'delhi':'anim-slide',
+  };
+
   document.querySelectorAll('.style-card').forEach(card => {
     card.addEventListener('click', () => {
       document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
@@ -418,6 +463,7 @@
     });
   });
 
+  let lastSegStart = null;
   function setupCaptionSync() {
     const overlay = document.getElementById('captionOverlay');
     overlay.className = 'caption-overlay style-' + selectedStyle;
@@ -425,13 +471,49 @@
       const t = previewVideo.currentTime;
       const seg = currentSegments.find(s => t >= s.start && t <= s.end);
       if (seg) {
-        overlay.textContent = seg.text;
-        overlay.classList.add('show');
+        if (seg.start !== lastSegStart) {
+          lastSegStart = seg.start;
+          overlay.textContent = seg.text;
+          const animClass = styleAnimMap[selectedStyle] || 'anim-slide';
+          overlay.classList.remove('anim-pop', 'anim-glow', 'anim-slide', 'show');
+          void overlay.offsetWidth; // force reflow to restart animation
+          overlay.classList.add('show', animClass);
+        }
       } else {
+        lastSegStart = null;
         overlay.classList.remove('show');
       }
+      // highlight matching timeline block
+      document.querySelectorAll('.timeline-block').forEach((b, i) => {
+        b.classList.toggle('active', seg && currentSegments[i] === seg);
+      });
     });
   }
+
+  function renderTimeline() {
+    const track = document.getElementById('timelineTrack');
+    track.innerHTML = '';
+    const total = previewVideo.duration || 1;
+    currentSegments.forEach(seg => {
+      const block = document.createElement('div');
+      block.className = 'timeline-block';
+      const widthPct = Math.max(2, ((seg.end - seg.start) / total) * 100);
+      block.style.width = widthPct + '%';
+      block.title = seg.text;
+      block.addEventListener('click', () => { previewVideo.currentTime = seg.start; previewVideo.play(); });
+      track.appendChild(block);
+    });
+  }
+
+  document.querySelectorAll('.aspect-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.aspect-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const frame = document.querySelector('.video-frame');
+      const map = { orig: 'auto', '916': '9/16', '169': '16/9', '11': '1/1' };
+      frame.style.aspectRatio = map[btn.dataset.ratio];
+    });
+  });
 
   fi.addEventListener('change', () => handleFile(fi.files[0]));
   ['dragover','dragleave','drop'].forEach(evt => {
@@ -541,6 +623,7 @@
       currentSegments = data.segments;
       document.getElementById('styleGallery').style.display = 'block';
       setupCaptionSync();
+      renderTimeline();
 
       saveProject(file.name, data.segments, previewVideo.duration, data.language).catch(err => {
         console.warn('Could not save project:', err.message);
