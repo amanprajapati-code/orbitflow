@@ -166,7 +166,35 @@
   .project-meta{font-size:11.5px; color:var(--text-muted); margin-top:2px;}
 
   .preview-wrap{margin-top:24px;}
-  .preview-video{width:100%; max-width:360px; border-radius:14px; border:1px solid var(--border); display:block;}
+  .video-frame{position:relative; max-width:360px; border-radius:14px; overflow:hidden;}
+  .preview-video{width:100%; border:1px solid var(--border); border-radius:14px; display:block;}
+  .caption-overlay{
+    position:absolute; left:50%; bottom:8%; transform:translateX(-50%);
+    max-width:88%; text-align:center; pointer-events:none;
+    opacity:0; transition:opacity .15s ease;
+  }
+  .caption-overlay.show{opacity:1;}
+
+  /* ---- style presets ---- */
+  .style-bold-beast{ font-family:'Inter',sans-serif; font-weight:800; font-size:17px; color:#fff; background:#000; padding:4px 10px; border-radius:4px; text-transform:uppercase; letter-spacing:.01em; }
+  .style-clean{ font-family:'Inter',sans-serif; font-weight:700; font-size:16px; color:var(--primary); text-shadow:0 0 10px rgba(182,255,106,0.7), 0 2px 6px rgba(0,0,0,0.8); }
+  .style-minimal{ font-family:'Inter',sans-serif; font-weight:500; font-size:14px; color:#eee; text-shadow:0 1px 4px rgba(0,0,0,0.8); }
+  .style-bubble{ font-family:'Inter',sans-serif; font-weight:700; font-size:15px; color:#0B0F0C; background:linear-gradient(135deg,var(--primary),var(--secondary)); padding:6px 16px; border-radius:999px; }
+  .style-word-pop{ font-family:'Inter',sans-serif; font-weight:800; font-size:19px; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.9); }
+  .style-word-pop b{color:var(--primary);}
+  .style-studio{ font-family:'Playfair Display',serif; font-weight:600; font-size:16px; color:#fff; background:rgba(0,0,0,0.65); padding:8px 18px; border-left:3px solid var(--primary); text-align:left; display:inline-block; }
+
+  .style-gallery{margin-top:6px;}
+  .style-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:10px;}
+  .style-card{padding:10px; cursor:pointer; border:1.5px solid transparent; transition:border-color .2s ease, transform .2s ease;}
+  .style-card:hover{transform:translateY(-3px);}
+  .style-card.selected{border-color:var(--primary);}
+  .style-preview{
+    height:56px; border-radius:8px; background:linear-gradient(160deg,#1c2620,#0a0f0b);
+    display:flex; align-items:center; justify-content:center; margin-bottom:8px; overflow:hidden;
+  }
+  .style-card-name{font-size:12.5px; font-weight:600; text-align:center;}
+
   .status-line{display:flex; align-items:center; gap:10px; margin-top:14px; font-size:13.5px; color:var(--text-muted);}
   .progress-bar-wrap{width:100%; max-width:360px; height:5px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-top:8px;}
   .progress-bar-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--primary),var(--accent-2)); transition:width .2s ease;}
@@ -220,7 +248,6 @@
       <div class="avatar"></div>
       <div>
         <div class="user-name" id="userName">—</div>
-        <div class="user-email" id="userEmail">—</div>
       </div>
       <a href="#" class="logout-link" onclick="logout(event)">Log out</a>
     </div>
@@ -262,13 +289,29 @@
     </div>
 
     <div id="previewArea" class="preview-wrap" style="display:none;">
-      <video id="previewVideo" class="preview-video" controls></video>
+      <div class="video-frame">
+        <video id="previewVideo" class="preview-video" controls></video>
+        <div id="captionOverlay" class="caption-overlay style-clean"></div>
+      </div>
       <div id="statusLine" class="status-line" style="display:none;">
         <span class="spinner"></span> <span id="statusText">Transcribing…</span>
         <span id="statusPct" style="margin-left:auto; color:var(--primary); font-weight:700;"></span>
       </div>
       <div id="progressBarWrap" class="progress-bar-wrap" style="display:none;"><div id="progressBarFill" class="progress-bar-fill"></div></div>
       <div id="errorBox" class="error-box" style="display:none;"></div>
+
+      <div id="styleGallery" class="style-gallery" style="display:none;">
+        <div class="upload-label" style="margin-top:20px;">Caption style</div>
+        <div class="style-grid">
+          <div class="glass style-card selected" data-style="bold-beast"><div class="style-preview style-bold-beast">SAMPLE</div><div class="style-card-name">Bold Beast</div></div>
+          <div class="glass style-card" data-style="clean"><div class="style-preview style-clean">Sample</div><div class="style-card-name">Clean Glow</div></div>
+          <div class="glass style-card" data-style="minimal"><div class="style-preview style-minimal">Sample</div><div class="style-card-name">Minimal</div></div>
+          <div class="glass style-card" data-style="bubble"><div class="style-preview style-bubble">Sample</div><div class="style-card-name">Bubble</div></div>
+          <div class="glass style-card" data-style="word-pop"><div class="style-preview style-word-pop">Sample</div><div class="style-card-name">Word Pop</div></div>
+          <div class="glass style-card" data-style="studio"><div class="style-preview style-studio">Sample</div><div class="style-card-name">Studio</div></div>
+        </div>
+      </div>
+
       <div id="transcriptList" class="transcript-list"></div>
     </div>
 
@@ -295,7 +338,6 @@
     }
     const email = session.user.email;
     document.getElementById('userName').textContent = email.split('@')[0];
-    document.getElementById('userEmail').textContent = email;
     document.getElementById('greeting').textContent = `Good to see you, ${email.split('@')[0]} 👋`;
     document.getElementById('gateLoader').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
@@ -330,6 +372,33 @@
   const statusText = document.getElementById('statusText');
   const errorBox = document.getElementById('errorBox');
   const transcriptList = document.getElementById('transcriptList');
+  let currentSegments = [];
+  let selectedStyle = 'bold-beast';
+
+  document.querySelectorAll('.style-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedStyle = card.dataset.style;
+      const overlay = document.getElementById('captionOverlay');
+      overlay.className = 'caption-overlay style-' + selectedStyle + (overlay.classList.contains('show') ? ' show' : '');
+    });
+  });
+
+  function setupCaptionSync() {
+    const overlay = document.getElementById('captionOverlay');
+    overlay.className = 'caption-overlay style-' + selectedStyle;
+    previewVideo.addEventListener('timeupdate', () => {
+      const t = previewVideo.currentTime;
+      const seg = currentSegments.find(s => t >= s.start && t <= s.end);
+      if (seg) {
+        overlay.textContent = seg.text;
+        overlay.classList.add('show');
+      } else {
+        overlay.classList.remove('show');
+      }
+    });
+  }
 
   fi.addEventListener('change', () => handleFile(fi.files[0]));
   ['dragover','dragleave','drop'].forEach(evt => {
@@ -344,6 +413,9 @@
     if (!file) return;
     errorBox.style.display = 'none';
     transcriptList.innerHTML = '';
+    currentSegments = [];
+    document.getElementById('styleGallery').style.display = 'none';
+    document.getElementById('captionOverlay').classList.remove('show');
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
       previewArea.style.display = 'block';
@@ -432,6 +504,10 @@
         row.innerHTML = `<span class="seg-time">${mm}:${ss}</span><span class="seg-text" contenteditable="true" spellcheck="false">${seg.text}</span>`;
         transcriptList.appendChild(row);
       });
+
+      currentSegments = data.segments;
+      document.getElementById('styleGallery').style.display = 'block';
+      setupCaptionSync();
 
       saveProject(file.name, data.segments, previewVideo.duration, data.language).catch(err => {
         console.warn('Could not save project:', err.message);
