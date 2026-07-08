@@ -55,14 +55,11 @@
         video.addEventListener('ended', () => { if (recorder.state !== 'inactive') recorder.stop(); });
 
         recorder.start();
-        video.playbackRate = 2;
-        // Keep pitch natural (default true) — only tempo changes, so Whisper's
-        // transcription accuracy isn't hurt by pitch distortion.
-        try { video.preservesPitch = true; video.webkitPreservesPitch = true; video.mozPreservesPitch = true; } catch (e) {}
+        video.playbackRate = 1;
         video.play().catch((err) => { cleanup(); reject(new Error('Could not play video for audio capture: ' + err.message)); });
 
-        // Safety net in case 'ended' never fires (duration is real-time; playback is 2x faster).
-        setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, (duration / 2 + 4) * 1000);
+        // Safety net in case 'ended' never fires.
+        setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, (duration + 4) * 1000);
       });
 
       video.addEventListener('error', () => { cleanup(); reject(new Error('Could not read this video file')); });
@@ -131,6 +128,11 @@
   .main h1 em{font-style:italic; background:linear-gradient(90deg,var(--primary),var(--secondary)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;}
   .main .sub{color:var(--text-muted); font-size:14.5px; margin-bottom:40px;}
   .upload-label{font-size:11.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;}
+  .lang-select{
+    display:block; width:100%; max-width:280px; margin-bottom:24px;
+    padding:11px 14px; border-radius:10px; font-size:14px; font-family:'Inter',sans-serif;
+    background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text); cursor:pointer;
+  }
   .dropzone{
     border:1.5px dashed var(--border); border-radius:var(--radius); padding:64px 20px;
     text-align:center; cursor:pointer; transition:all .25s cubic-bezier(.16,.8,.3,1); position:relative;
@@ -162,7 +164,9 @@
   .transcript-list{margin-top:18px; display:flex; flex-direction:column; gap:8px; max-width:560px;}
   .seg-row{display:flex; gap:14px; padding:12px 16px; align-items:baseline;}
   .seg-time{font-size:11.5px; color:var(--primary); font-weight:700; white-space:nowrap; min-width:70px;}
-  .seg-text{font-size:14px; color:var(--text);}
+  .seg-text{font-size:14px; color:var(--text); flex:1; padding:4px 8px; border-radius:6px; outline:none; transition:background .15s ease;}
+  .seg-text:hover{background:rgba(255,255,255,0.04);}
+  .seg-text:focus{background:rgba(182,255,106,0.08); box-shadow:0 0 0 1px rgba(182,255,106,0.35);}
   .error-box{margin-top:16px; padding:14px 18px; border-radius:12px; background:rgba(255,90,90,0.08); border:1px solid rgba(255,90,90,0.25); color:#E39A9A; font-size:13.5px; max-width:560px;}
 
   @media (max-width:800px){
@@ -213,7 +217,23 @@
     <h1 id="greeting" class="fade-in" style="animation-delay:.12s">Good to see you 👋</h1>
     <p class="sub fade-in" style="animation-delay:.18s">Upload a video and let OrbitFlow <em style="font-style:italic; color:var(--primary);">generate</em> your captions.</p>
 
-    <div class="upload-label fade-in" style="animation-delay:.24s">Upload a video</div>
+    <div class="upload-label fade-in" style="animation-delay:.24s">Spoken language</div>
+    <select id="langSelect" class="lang-select fade-in" style="animation-delay:.26s">
+      <option value="hi" selected>Hindi / Hinglish</option>
+      <option value="">Auto-detect</option>
+      <option value="en">English</option>
+      <option value="ta">Tamil</option>
+      <option value="te">Telugu</option>
+      <option value="bn">Bengali</option>
+      <option value="mr">Marathi</option>
+      <option value="gu">Gujarati</option>
+      <option value="pa">Punjabi</option>
+      <option value="kn">Kannada</option>
+      <option value="ml">Malayalam</option>
+      <option value="ur">Urdu</option>
+    </select>
+
+    <div class="upload-label fade-in" style="animation-delay:.3s">Upload a video</div>
     <div class="dropzone fade-in" id="dropzone" style="animation-delay:.3s">
       <input type="file" accept="video/mp4,video/quicktime" id="fileInput">
       <div class="icon">⬆️</div>
@@ -367,6 +387,7 @@
         xhr.onerror = () => reject(new Error('Network error while uploading'));
         const fd = new FormData();
         fd.append('file', audioBlob, 'audio.webm');
+        fd.append('language', document.getElementById('langSelect').value);
         xhr.send(fd);
       });
 
@@ -385,7 +406,7 @@
         const row = document.createElement('div');
         row.className = 'glass seg-row';
         const mm = Math.floor(seg.start / 60), ss = Math.floor(seg.start % 60).toString().padStart(2, '0');
-        row.innerHTML = `<span class="seg-time">${mm}:${ss}</span><span class="seg-text">${seg.text}</span>`;
+        row.innerHTML = `<span class="seg-time">${mm}:${ss}</span><span class="seg-text" contenteditable="true" spellcheck="false">${seg.text}</span>`;
         transcriptList.appendChild(row);
       });
     } catch (err) {
