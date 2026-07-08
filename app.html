@@ -133,6 +133,11 @@
     padding:11px 14px; border-radius:10px; font-size:14px; font-family:'Inter',sans-serif;
     background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text); cursor:pointer;
   }
+  .translate-toggle{
+    display:flex; align-items:center; gap:10px; margin-top:-10px; margin-bottom:24px;
+    font-size:13.5px; color:var(--text-muted); cursor:pointer; user-select:none;
+  }
+  .translate-toggle input{width:16px; height:16px; accent-color:var(--primary); cursor:pointer;}
   .dropzone{
     border:1.5px dashed var(--border); border-radius:var(--radius); padding:64px 20px;
     text-align:center; cursor:pointer; transition:all .25s cubic-bezier(.16,.8,.3,1); position:relative;
@@ -233,6 +238,11 @@
       <option value="ml">Malayalam</option>
       <option value="ur">Urdu</option>
     </select>
+
+    <label class="translate-toggle fade-in" style="animation-delay:.28s">
+      <input type="checkbox" id="translateToggle">
+      <span>Translate captions to English</span>
+    </label>
 
     <div class="upload-label fade-in" style="animation-delay:.3s">Upload a video</div>
     <div class="dropzone fade-in" id="dropzone" style="animation-delay:.3s">
@@ -389,6 +399,7 @@
         const fd = new FormData();
         fd.append('file', audioBlob, 'audio.webm');
         fd.append('language', document.getElementById('langSelect').value);
+        fd.append('translate', document.getElementById('translateToggle').checked ? 'true' : 'false');
         xhr.send(fd);
       });
 
