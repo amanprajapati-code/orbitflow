@@ -97,20 +97,36 @@
   /* ===== Prepare Your Media modal ===== */
   .modal-overlay{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(6,9,7,0.75); backdrop-filter:blur(6px); }
   .modal-overlay.open{display:flex;}
-  .modal-card{padding:30px; position:relative; max-width:440px; width:100%;}
-  .modal-close{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer;}
-  .modal-close:hover{color:var(--text);}
+  .modal-card{
+    padding:28px; position:relative; max-width:440px; width:100%;
+    border:1px solid rgba(182,255,106,0.16);
+    box-shadow:0 24px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(182,255,106,0.05) inset;
+  }
+  .modal-close{position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.04); border:1px solid var(--border); width:28px; height:28px; border-radius:50%; color:var(--text-muted); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .modal-close:hover{color:var(--text); background:rgba(255,255,255,0.08);}
   .modal-title{font-size:20px; margin-bottom:4px;}
   .modal-sub{font-size:13.5px; color:var(--text-muted); margin-bottom:18px;}
-  .modal-video{width:100%; border-radius:12px; margin-bottom:18px; background:#000; display:block; max-height:200px;}
-  .field-input{margin-bottom:14px;}
-  .field-input label{display:block; font-size:12px; color:var(--text-muted); margin-bottom:6px; font-weight:600; letter-spacing:.02em; text-transform:uppercase;}
+  .modal-video-wrap{position:relative; margin-bottom:16px;}
+  .modal-video{width:100%; border-radius:12px; background:#000; display:block; max-height:200px;}
+  .modal-video-status{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--primary); font-weight:600; margin-top:9px;}
+  .modal-video-status .dot{width:15px; height:15px; border-radius:50%; background:rgba(182,255,106,0.14); display:flex; align-items:center; justify-content:center; font-size:9px;}
+
+  .lang-settings-card{padding:16px; margin-bottom:14px;}
+  .lang-settings-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .lang-settings-icon{width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg, rgba(182,255,106,0.18), rgba(79,209,255,0.1)); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;}
+  .lang-settings-head h3{font-size:13.5px; font-weight:700;}
+  .lang-settings-head p{font-size:11.5px; color:var(--text-muted); margin-top:1px;}
+  .lang-fields-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .field-input{margin-bottom:0;}
+  .field-input label{display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-muted); margin-bottom:6px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;}
   .field-input select{
-    width:100%; padding:11px 14px; border-radius:10px; font-size:14px;
+    width:100%; padding:11px 12px; border-radius:10px; font-size:13.5px;
     background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text);
     font-family:'Inter',sans-serif; outline:none; cursor:pointer;
   }
-  .translate-row{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--text-muted); margin:4px 0 18px; cursor:pointer; user-select:none;}
+  .field-input select:focus{border-color:rgba(182,255,106,0.4);}
+  .field-hint{font-size:11px; color:var(--text-muted); margin-top:6px; grid-column:1/-1;}
+  .translate-row{display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--text-muted); margin:14px 0 18px; cursor:pointer; user-select:none;}
   .translate-row input{width:16px; height:16px; accent-color:var(--primary); cursor:pointer;}
 
   /* ===== editor toolbar ===== */
@@ -118,6 +134,7 @@
   .toolbar-back{background:none; border:none; color:var(--text-muted); font-size:13.5px; cursor:pointer; padding:6px 0;}
   .toolbar-back:hover{color:var(--text);}
   .toolbar-name{font-size:13.5px; font-weight:600;}
+  .usage-badge{font-size:11px; font-weight:700; color:var(--primary); background:rgba(182,255,106,0.1); border:1px solid rgba(182,255,106,0.25); padding:4px 10px; border-radius:20px; white-space:nowrap;}
   .toolbar-spacer{flex:1;}
   .res-btns, .aspect-btns{display:flex; gap:6px;}
   .chip-btn{padding:6px 13px; border-radius:7px; font-size:11.5px; font-weight:600; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all .15s ease;}
@@ -136,11 +153,12 @@
   .editor-col{padding:16px;}
   .captions-col, .templates-col{max-height:660px; overflow-y:auto;}
   .col-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:12px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;}
+  .caption-count{font-size:10.5px; font-weight:700; color:var(--text-muted); background:rgba(255,255,255,0.05); border:1px solid var(--border); padding:2px 7px; border-radius:20px; margin-left:6px; text-transform:none; letter-spacing:0;}
 
   /* transcript list */
   .transcript-list{display:flex; flex-direction:column; gap:8px;}
   .seg-row{display:flex; gap:10px; padding:10px 12px; align-items:flex-start; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border);}
-  .seg-time{font-size:11px; color:var(--primary); font-weight:700; white-space:nowrap; padding-top:4px;}
+  .seg-time{font-size:10.5px; color:var(--primary); font-weight:700; white-space:nowrap; padding-top:4px; font-variant-numeric:tabular-nums; min-width:78px;}
   .seg-text{font-size:13.5px; color:var(--text); flex:1; padding:4px 6px; border-radius:6px; outline:none; transition:background .15s ease;}
   .seg-text:hover{background:rgba(255,255,255,0.04);}
   .seg-text:focus{background:rgba(182,255,106,0.08); box-shadow:0 0 0 1px rgba(182,255,106,0.35);}
@@ -155,9 +173,36 @@
   .kword{display:inline-block; opacity:.5; transform:scale(1); transition:transform .14s cubic-bezier(.34,1.56,.64,1), opacity .14s ease, color .14s ease; margin:0 2px;}
   .kword-active{opacity:1; transform:scale(1.18);}
 
-  .timeline-track{display:flex; gap:3px; margin-top:16px; height:36px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:9px; padding:4px; overflow-x:auto;}
-  .timeline-block{flex:0 0 auto; min-width:22px; background:linear-gradient(135deg,var(--primary),var(--secondary)); opacity:.45; border-radius:4px; cursor:pointer; transition:opacity .15s ease;}
-  .timeline-block:hover, .timeline-block.active{opacity:1;}
+  /* ===== Timeline: waveform + draggable word/line blocks ===== */
+  .timeline-wrap{margin-top:16px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,0.02); overflow:hidden;}
+  .timeline-controls{display:flex; align-items:center; gap:8px; padding:8px 10px; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.02);}
+  .tl-left, .tl-right{display:flex; align-items:center; gap:5px;}
+  .tl-icon-btn{width:26px; height:26px; border-radius:7px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-muted); font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s ease; flex-shrink:0;}
+  .tl-icon-btn:hover{color:var(--primary); border-color:rgba(182,255,106,0.3); background:rgba(182,255,106,0.08);}
+  .tl-play{color:var(--primary); border-color:rgba(182,255,106,0.25);}
+  .tl-mode-toggle{display:flex; gap:4px; margin-left:4px; background:rgba(255,255,255,0.03); padding:3px; border-radius:8px;}
+  .tl-mode-toggle .chip-btn{padding:5px 10px; font-size:11px;}
+  .tl-time{font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums; margin-left:auto; white-space:nowrap;}
+  .tl-zoom-label{font-size:10.5px; color:var(--text-muted); width:36px; text-align:center;}
+  .timeline-scroll{overflow-x:auto; overflow-y:hidden; padding:10px 0 12px;}
+  .timeline-canvas-wrap{position:relative; height:64px; min-width:100%; margin:0 10px;}
+  .waveform-canvas{position:absolute; left:0; top:0; width:100%; height:100%; opacity:0.5; pointer-events:none;}
+  .timeline-blocks-layer{position:absolute; left:0; top:0; width:100%; height:100%;}
+  .tl-block{
+    position:absolute; top:5px; height:54px; border-radius:7px;
+    background:linear-gradient(180deg, rgba(182,255,106,0.24), rgba(182,255,106,0.07));
+    border:1px solid rgba(182,255,106,0.32); cursor:grab;
+    display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600;
+    color:var(--text); overflow:hidden; padding:0 8px; white-space:nowrap; text-overflow:ellipsis;
+    user-select:none; touch-action:none; transition:box-shadow .15s ease, border-color .15s ease;
+  }
+  .tl-block:hover{border-color:rgba(182,255,106,0.55);}
+  .tl-block.active{border-color:var(--primary); box-shadow:0 0 0 1px var(--primary), 0 0 16px rgba(182,255,106,0.4); background:linear-gradient(180deg, rgba(182,255,106,0.38), rgba(182,255,106,0.12));}
+  .tl-block:active{cursor:grabbing;}
+  .tl-handle{position:absolute; top:0; width:7px; height:100%; cursor:ew-resize; z-index:2; touch-action:none;}
+  .tl-handle-l{left:0; border-radius:7px 0 0 7px;} .tl-handle-r{right:0; border-radius:0 7px 7px 0;}
+  .tl-handle:hover{background:rgba(182,255,106,0.45);}
+  .tl-playhead{position:absolute; top:0; width:2px; height:100%; background:var(--primary); box-shadow:0 0 10px rgba(182,255,106,0.8); pointer-events:none; z-index:3; left:0;}
 
   /* right: templates */
   .style-search{ display:block; width:100%; margin-bottom:14px; padding:10px 13px; border-radius:10px; font-size:13px;
@@ -252,8 +297,8 @@
     <div class="nav-spacer"></div>
     <div class="glass plan-card">
       <div class="row"><span>Free plan</span><span class="plan-badge">FREE</span></div>
-      <div class="bar"><span></span></div>
-      <div class="plan-sub">5 min transcription left this month</div>
+      <div class="bar"><span id="planBarFill"></span></div>
+      <div class="plan-sub" id="planSubText">5 min transcription left this month</div>
       <a href="index.html#pricing" style="font-size:12.5px; color:var(--primary); font-weight:600;">Upgrade →</a>
     </div>
     <div class="user-row">
@@ -302,6 +347,7 @@
     <div class="editor-toolbar">
       <button class="toolbar-back" onclick="backToDashboard()">← Back</button>
       <span class="toolbar-name" id="toolbarName">—</span>
+      <span class="usage-badge" id="usageBadge" style="display:none;"></span>
       <div class="toolbar-spacer"></div>
       <div class="res-btns">
         <button class="chip-btn active">1080p</button>
@@ -322,8 +368,10 @@
     <div class="editor-grid">
       <div class="glass editor-col captions-col">
         <div class="col-head">
-          <span>Captions</span>
+          <span>Captions <span class="caption-count" id="captionCount"></span></span>
           <div class="aspect-btns">
+            <button class="tl-icon-btn" id="undoBtn" onclick="undoEdit()" title="Undo" disabled>↶</button>
+            <button class="tl-icon-btn" id="redoBtn" onclick="redoEdit()" title="Redo" disabled>↷</button>
             <button class="chip-btn active" id="lines1Btn" onclick="setLines(1)">1 Line</button>
             <button class="chip-btn" id="lines2Btn" onclick="setLines(2)">2 Lines</button>
           </div>
@@ -339,13 +387,40 @@
             <button class="chip-btn" data-ratio="916">9:16</button>
             <button class="chip-btn" data-ratio="169">16:9</button>
             <button class="chip-btn" data-ratio="11">1:1</button>
+            <button class="chip-btn" data-ratio="45">4:5</button>
+            <button class="tl-icon-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
           </div>
         </div>
         <div class="video-frame">
           <video id="previewVideo" class="preview-video" controls></video>
           <div id="captionOverlay" class="caption-overlay style-bold-beast"></div>
         </div>
-        <div id="timelineTrack" class="timeline-track"></div>
+        <div class="timeline-wrap">
+          <div class="timeline-controls">
+            <div class="tl-left">
+              <button class="tl-icon-btn" id="tlPrevBtn" title="Previous segment">⏮</button>
+              <button class="tl-icon-btn tl-play" id="tlPlayBtn" title="Play/Pause">▶</button>
+              <button class="tl-icon-btn" id="tlNextBtn" title="Next segment">⏭</button>
+            </div>
+            <div class="tl-mode-toggle">
+              <button class="chip-btn active" id="tlWordBtn" onclick="setTimelineMode('word')">Word</button>
+              <button class="chip-btn" id="tlLineBtn" onclick="setTimelineMode('line')">Line</button>
+            </div>
+            <span class="tl-time" id="tlTime">00:00 / 00:00</span>
+            <div class="tl-right">
+              <button class="tl-icon-btn" onclick="timelineZoomOut()" title="Zoom out">－</button>
+              <span class="tl-zoom-label" id="tlZoomLabel">100%</span>
+              <button class="tl-icon-btn" onclick="timelineZoomIn()" title="Zoom in">＋</button>
+            </div>
+          </div>
+          <div class="timeline-scroll" id="timelineScroll">
+            <div class="timeline-canvas-wrap" id="timelineCanvasWrap">
+              <canvas id="waveformCanvas" class="waveform-canvas"></canvas>
+              <div class="timeline-blocks-layer" id="timelineBlocksLayer"></div>
+              <div class="tl-playhead" id="tlPlayhead"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="glass editor-col templates-col">
@@ -376,46 +451,59 @@
 
 <!-- ===== Prepare Your Media modal (Step 2) ===== -->
 <div id="prepOverlay" class="modal-overlay" onclick="if(event.target===this) closePrepModal()">
-  <div class="glow-border">
-    <div class="glass modal-card">
-      <button class="modal-close" onclick="closePrepModal()">✕</button>
-      <h2 class="modal-title">Prepare Your Media</h2>
-      <p class="modal-sub">Select a language to transcribe your media.</p>
+  <div class="glass modal-card">
+    <button class="modal-close" onclick="closePrepModal()">✕</button>
+    <h2 class="modal-title">Prepare Your Media</h2>
+    <p class="modal-sub">Select a language to transcribe your media.</p>
+
+    <div class="modal-video-wrap">
       <video id="prepThumb" class="modal-video" muted controls></video>
-
-      <div class="field-input">
-        <label>What language is spoken?</label>
-        <select id="langSelect">
-          <option value="" selected>Auto-detect</option>
-          <option value="hi">Hindi</option>
-          <option value="en">English</option>
-          <option value="ta">Tamil</option>
-          <option value="te">Telugu</option>
-          <option value="bn">Bengali</option>
-          <option value="mr">Marathi</option>
-          <option value="gu">Gujarati</option>
-          <option value="pa">Punjabi</option>
-          <option value="kn">Kannada</option>
-          <option value="ml">Malayalam</option>
-          <option value="ur">Urdu</option>
-        </select>
-      </div>
-
-      <div class="field-input">
-        <label>Writing system used?</label>
-        <select id="scriptSelect">
-          <option value="native" selected>Native script</option>
-          <option value="roman">Romanised (Latin)</option>
-        </select>
-      </div>
-
-      <label class="translate-row">
-        <input type="checkbox" id="translateToggle">
-        <span>Translate captions to English</span>
-      </label>
-
-      <button class="btn btn-primary" style="width:100%;" onclick="startTranscription()">Generate Transcription <span>→</span></button>
+      <div class="modal-video-status"><span class="dot">✓</span> Ready for processing</div>
     </div>
+
+    <div class="glass lang-settings-card">
+      <div class="lang-settings-head">
+        <div class="lang-settings-icon">✨</div>
+        <div>
+          <h3>Language Settings</h3>
+          <p>Configure the source language and writing system</p>
+        </div>
+      </div>
+      <div class="lang-fields-grid">
+        <div class="field-input">
+          <label>🔊 Spoken language</label>
+          <select id="langSelect">
+            <option value="" selected>Auto-detect</option>
+            <option value="hi">Hindi</option>
+            <option value="en">English</option>
+            <option value="ta">Tamil</option>
+            <option value="te">Telugu</option>
+            <option value="bn">Bengali</option>
+            <option value="mr">Marathi</option>
+            <option value="gu">Gujarati</option>
+            <option value="pa">Punjabi</option>
+            <option value="kn">Kannada</option>
+            <option value="ml">Malayalam</option>
+            <option value="ur">Urdu</option>
+          </select>
+        </div>
+        <div class="field-input">
+          <label>📄 Writing system</label>
+          <select id="scriptSelect" onchange="updateScriptHint()">
+            <option value="native" selected>Native script</option>
+            <option value="roman">Romanised (Latin)</option>
+          </select>
+        </div>
+        <div class="field-hint" id="scriptHint">Captions shown in the original script.</div>
+      </div>
+    </div>
+
+    <label class="translate-row">
+      <input type="checkbox" id="translateToggle">
+      <span>Translate captions to English</span>
+    </label>
+
+    <button class="btn btn-primary" style="width:100%;" onclick="startTranscription()">Generate Transcription <span>→</span></button>
   </div>
 </div>
 
@@ -542,6 +630,12 @@
     document.getElementById('prepOverlay').classList.add('open');
   }
   function closePrepModal() { document.getElementById('prepOverlay').classList.remove('open'); }
+  function updateScriptHint() {
+    const script = document.getElementById('scriptSelect').value;
+    document.getElementById('scriptHint').textContent = script === 'roman'
+      ? 'Transliterated into Latin characters.'
+      : 'Captions shown in the original script.';
+  }
   function backToDashboard() {
     document.getElementById('editorMain').style.display = 'none';
     document.getElementById('dashboardMain').style.display = 'block';
@@ -565,6 +659,13 @@
   let currentSegments = [];
   let currentWords = [];
   let selectedStyle = 'bold-beast';
+  let currentAudioBlob = null;
+  let waveformPeaks = null;
+  let timelineZoom = 70;      // px per second
+  let timelineMode = 'word';  // 'word' | 'line'
+  let editHistory = [];
+  let historyIndex = -1;
+  let historyTimer = null;
 
   async function startTranscription() {
     const file = selectedFile;
@@ -574,6 +675,10 @@
     transcriptList.innerHTML = '';
     currentSegments = [];
     currentWords = [];
+    currentAudioBlob = null;
+    waveformPeaks = null;
+    editHistory = [];
+    historyIndex = -1;
     document.getElementById('captionOverlay').classList.remove('show');
     errorBox.style.display = 'none';
 
@@ -605,6 +710,7 @@
         progressBarFill.style.width = `${Math.round(ratio * 100)}%`;
         statusPct.textContent = `${Math.round(ratio * 100)}%`;
       });
+      currentAudioBlob = audioBlob;
       const t1 = performance.now();
       console.info(`Audio extraction took ${((t1 - t0) / 1000).toFixed(1)}s — output ${(audioBlob.size / 1024).toFixed(0)} KB`);
 
@@ -644,17 +750,23 @@
         return;
       }
 
-      data.segments.forEach(seg => {
-        const row = document.createElement('div');
-        row.className = 'seg-row';
-        const mm = Math.floor(seg.start / 60), ss = Math.floor(seg.start % 60).toString().padStart(2, '0');
-        row.innerHTML = `<span class="seg-time">${mm}:${ss}</span><span class="seg-text" contenteditable="true" spellcheck="false">${seg.text}</span>`;
-        transcriptList.appendChild(row);
-      });
-
+      data.segments.forEach(seg => { seg.text = seg.text.trim(); });
       currentSegments = data.segments;
       currentWords = data.words || [];
+      renderTranscriptList();
+      pushHistory();
       setupCaptionSync();
+
+      // usage badge (top toolbar) + sidebar plan card, from server-verified usage
+      if (typeof data.secondsUsedThisMonth === 'number' && typeof data.secondsLimit === 'number') {
+        updateUsageDisplay(data.secondsUsedThisMonth, data.secondsLimit);
+      }
+
+      // waveform (decoded from the extracted audio) + full timeline render
+      computeWaveformPeaks(audioBlob).then(result => {
+        waveformPeaks = result;
+        renderTimeline();
+      });
       renderTimeline();
 
       saveProject(file.name, data.segments, previewVideo.duration, data.language).catch(err => {
@@ -692,7 +804,7 @@
       document.querySelectorAll('.chip-btn[data-ratio]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const frame = document.querySelector('.video-frame');
-      const map = { orig: 'auto', '916': '9/16', '169': '16/9', '11': '1/1' };
+      const map = { orig: 'auto', '916': '9/16', '169': '16/9', '11': '1/1', '45': '4/5' };
       frame.style.aspectRatio = map[btn.dataset.ratio];
     });
   });
@@ -731,25 +843,274 @@
         overlay.classList.remove('show');
       }
 
-      document.querySelectorAll('.timeline-block').forEach((b, i) => {
-        b.classList.toggle('active', seg && currentSegments[i] === seg);
+      document.querySelectorAll('.tl-block').forEach(b => {
+        const s = parseFloat(b.dataset.start), e = parseFloat(b.dataset.end);
+        b.classList.toggle('active', t >= s && t <= e);
       });
+      updatePlayhead();
+    });
+    previewVideo.addEventListener('play', () => { document.getElementById('tlPlayBtn').textContent = '⏸'; });
+    previewVideo.addEventListener('pause', () => { document.getElementById('tlPlayBtn').textContent = '▶'; });
+    previewVideo.addEventListener('loadedmetadata', () => renderTimeline());
+  }
+
+  // ===== Transcript list (left column) with undo/redo history =====
+  function renderTranscriptList() {
+    transcriptList.innerHTML = '';
+    currentSegments.forEach((seg, i) => {
+      const row = document.createElement('div');
+      row.className = 'seg-row';
+      row.dataset.index = i;
+      row.innerHTML = `<span class="seg-time">${fmtTime(seg.start)} → ${fmtTime(seg.end)}</span><span class="seg-text" contenteditable="true" spellcheck="false">${seg.text}</span>`;
+      const textEl = row.querySelector('.seg-text');
+      textEl.addEventListener('input', () => {
+        currentSegments[i].text = textEl.textContent;
+        clearTimeout(historyTimer);
+        historyTimer = setTimeout(pushHistory, 600);
+      });
+      transcriptList.appendChild(row);
+    });
+    const badge = document.getElementById('captionCount');
+    if (badge) badge.textContent = currentSegments.length ? `${currentSegments.length} lines` : '';
+  }
+
+  function fmtTime(sec) {
+    sec = Math.max(0, sec || 0);
+    const mm = Math.floor(sec / 60), ss = (sec % 60).toFixed(1).padStart(4, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function pushHistory() {
+    const snapshot = currentSegments.map(s => ({ ...s }));
+    editHistory = editHistory.slice(0, historyIndex + 1);
+    editHistory.push(snapshot);
+    if (editHistory.length > 40) editHistory.shift();
+    historyIndex = editHistory.length - 1;
+    updateUndoRedoButtons();
+  }
+  function undoEdit() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    currentSegments = editHistory[historyIndex].map(s => ({ ...s }));
+    renderTranscriptList();
+    updateUndoRedoButtons();
+  }
+  function redoEdit() {
+    if (historyIndex >= editHistory.length - 1) return;
+    historyIndex++;
+    currentSegments = editHistory[historyIndex].map(s => ({ ...s }));
+    renderTranscriptList();
+    updateUndoRedoButtons();
+  }
+  function updateUndoRedoButtons() {
+    document.getElementById('undoBtn').disabled = historyIndex <= 0;
+    document.getElementById('redoBtn').disabled = historyIndex >= editHistory.length - 1;
+  }
+
+  // ===== Usage badge (toolbar + sidebar) =====
+  function updateUsageDisplay(usedSec, limitSec) {
+    const pct = Math.min(100, Math.round((usedSec / limitSec) * 100));
+    const leftMin = Math.max(0, ((limitSec - usedSec) / 60)).toFixed(1);
+    const badge = document.getElementById('usageBadge');
+    badge.textContent = `${leftMin} min left this month`;
+    badge.style.display = 'inline-block';
+    const bar = document.getElementById('planBarFill');
+    const sub = document.getElementById('planSubText');
+    if (bar) bar.style.width = pct + '%';
+    if (sub) sub.textContent = `${leftMin} min transcription left this month`;
+  }
+
+  // ===== Waveform (decoded from extracted audio) =====
+  async function computeWaveformPeaks(blob) {
+    try {
+      const arrayBuf = await blob.arrayBuffer();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
+      const raw = audioBuf.getChannelData(0);
+      const buckets = 1600;
+      const blockSize = Math.max(1, Math.floor(raw.length / buckets));
+      const peaks = new Float32Array(buckets);
+      for (let i = 0; i < buckets; i++) {
+        let max = 0;
+        const start = i * blockSize, end = Math.min(start + blockSize, raw.length);
+        for (let j = start; j < end; j++) { const v = Math.abs(raw[j]); if (v > max) max = v; }
+        peaks[i] = max;
+      }
+      audioCtx.close();
+      return { peaks, duration: audioBuf.duration };
+    } catch (e) {
+      console.warn('Waveform decode failed:', e.message);
+      return null;
+    }
+  }
+
+  function drawWaveform() {
+    const canvas = document.getElementById('waveformCanvas');
+    const wrap = document.getElementById('timelineCanvasWrap');
+    if (!canvas || !wrap) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    if (w === 0 || h === 0) return;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (!waveformPeaks) return;
+    const peaks = waveformPeaks.peaks;
+    const n = peaks.length;
+    const barW = Math.max(1.2, w / n);
+    const mid = h / 2;
+    ctx.fillStyle = 'rgba(182,255,106,0.5)';
+    for (let i = 0; i < n; i++) {
+      const barH = Math.max(1, peaks[i] * h * 0.85);
+      ctx.fillRect(i * barW, mid - barH / 2, Math.max(1, barW - 0.6), barH);
+    }
+  }
+
+  // ===== Timeline: waveform + draggable word/line blocks =====
+  function renderTimeline() {
+    const total = previewVideo.duration || (waveformPeaks && waveformPeaks.duration) || 1;
+    if (!isFinite(total) || total <= 0) return;
+    const scrollEl = document.getElementById('timelineScroll');
+    const wrap = document.getElementById('timelineCanvasWrap');
+    const minWidth = scrollEl.clientWidth || 300;
+    const widthPx = Math.max(total * timelineZoom, minWidth);
+    wrap.style.width = widthPx + 'px';
+    drawWaveform();
+    renderTimelineBlocks();
+    updatePlayhead();
+  }
+
+  function renderTimelineBlocks() {
+    const layer = document.getElementById('timelineBlocksLayer');
+    layer.innerHTML = '';
+    const total = previewVideo.duration || 1;
+    const wrap = document.getElementById('timelineCanvasWrap');
+    const widthPx = wrap.offsetWidth || total * timelineZoom;
+    const items = timelineMode === 'word' ? currentWords : currentSegments;
+
+    items.forEach((item) => {
+      const block = document.createElement('div');
+      block.className = 'tl-block';
+      const left = (item.start / total) * widthPx;
+      const width = Math.max(timelineMode === 'word' ? 10 : 6, ((item.end - item.start) / total) * widthPx);
+      block.style.left = left + 'px';
+      block.style.width = width + 'px';
+      block.dataset.start = item.start;
+      block.dataset.end = item.end;
+      const label = timelineMode === 'word' ? item.word : item.text;
+      block.textContent = label;
+      block.title = label;
+
+      const hl = document.createElement('div'); hl.className = 'tl-handle tl-handle-l';
+      const hr = document.createElement('div'); hr.className = 'tl-handle tl-handle-r';
+      block.appendChild(hl); block.appendChild(hr);
+
+      setupBlockDrag(block, hl, hr, item);
+
+      block.addEventListener('click', (e) => {
+        if (e.target === hl || e.target === hr) return;
+        previewVideo.currentTime = item.start;
+      });
+
+      layer.appendChild(block);
     });
   }
 
-  function renderTimeline() {
-    const track = document.getElementById('timelineTrack');
-    track.innerHTML = '';
-    const total = previewVideo.duration || 1;
-    currentSegments.forEach(seg => {
-      const block = document.createElement('div');
-      block.className = 'timeline-block';
-      block.style.width = Math.max(2, ((seg.end - seg.start) / total) * 100) + '%';
-      block.title = seg.text;
-      block.addEventListener('click', () => { previewVideo.currentTime = seg.start; previewVideo.play(); });
-      track.appendChild(block);
-    });
+  function setupBlockDrag(block, handleL, handleR, item) {
+    function startDrag(e, mode) {
+      e.preventDefault(); e.stopPropagation();
+      const total = previewVideo.duration || 1;
+      const wrap = document.getElementById('timelineCanvasWrap');
+      const widthPx = wrap.offsetWidth || total * timelineZoom;
+      const startX = e.clientX;
+      const origStart = item.start, origEnd = item.end;
+
+      function onMove(ev) {
+        const dx = ev.clientX - startX;
+        const dt = (dx / widthPx) * total;
+        if (mode === 'move') {
+          const dur = origEnd - origStart;
+          let ns = origStart + dt, ne = origEnd + dt;
+          if (ns < 0) { ns = 0; ne = dur; }
+          if (ne > total) { ne = total; ns = total - dur; }
+          item.start = ns; item.end = ne;
+        } else if (mode === 'left') {
+          item.start = Math.max(0, Math.min(origStart + dt, item.end - 0.05));
+        } else if (mode === 'right') {
+          item.end = Math.min(total, Math.max(origEnd + dt, item.start + 0.05));
+        }
+        block.style.left = ((item.start / total) * widthPx) + 'px';
+        block.style.width = Math.max(6, ((item.end - item.start) / total) * widthPx) + 'px';
+        block.dataset.start = item.start;
+        block.dataset.end = item.end;
+      }
+      function onUp() {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        if (timelineMode === 'line') renderTranscriptList();
+        pushHistory();
+      }
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    }
+    block.addEventListener('pointerdown', (e) => startDrag(e, 'move'));
+    handleL.addEventListener('pointerdown', (e) => startDrag(e, 'left'));
+    handleR.addEventListener('pointerdown', (e) => startDrag(e, 'right'));
   }
+
+  function setTimelineMode(mode) {
+    timelineMode = mode;
+    document.getElementById('tlWordBtn').classList.toggle('active', mode === 'word');
+    document.getElementById('tlLineBtn').classList.toggle('active', mode === 'line');
+    renderTimelineBlocks();
+  }
+
+  function timelineZoomIn() { timelineZoom = Math.min(400, timelineZoom * 1.3); onZoomChange(); }
+  function timelineZoomOut() { timelineZoom = Math.max(20, timelineZoom / 1.3); onZoomChange(); }
+  function onZoomChange() {
+    document.getElementById('tlZoomLabel').textContent = Math.round((timelineZoom / 70) * 100) + '%';
+    renderTimeline();
+  }
+
+  function updatePlayhead() {
+    const total = previewVideo.duration || 1;
+    const wrap = document.getElementById('timelineCanvasWrap');
+    const widthPx = wrap.offsetWidth || total * timelineZoom;
+    const playhead = document.getElementById('tlPlayhead');
+    const t = previewVideo.currentTime || 0;
+    playhead.style.left = ((t / total) * widthPx) + 'px';
+    document.getElementById('tlTime').textContent = `${fmtTime(t)} / ${fmtTime(total)}`;
+    const scrollEl = document.getElementById('timelineScroll');
+    const playheadPx = (t / total) * widthPx;
+    if (playheadPx < scrollEl.scrollLeft || playheadPx > scrollEl.scrollLeft + scrollEl.clientWidth - 40) {
+      scrollEl.scrollLeft = playheadPx - scrollEl.clientWidth / 2;
+    }
+  }
+
+  document.getElementById('tlPlayBtn').addEventListener('click', () => {
+    if (previewVideo.paused) previewVideo.play(); else previewVideo.pause();
+  });
+  document.getElementById('tlPrevBtn').addEventListener('click', () => {
+    const t = previewVideo.currentTime;
+    const prevSegs = currentSegments.filter(s => s.start < t - 0.15);
+    previewVideo.currentTime = prevSegs.length ? prevSegs[prevSegs.length - 1].start : 0;
+  });
+  document.getElementById('tlNextBtn').addEventListener('click', () => {
+    const t = previewVideo.currentTime;
+    const next = currentSegments.find(s => s.start > t + 0.15);
+    if (next) previewVideo.currentTime = next.start;
+  });
+
+  function toggleFullscreen() {
+    const frame = document.querySelector('.video-frame');
+    if (!document.fullscreenElement) frame.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  }
+
+  window.addEventListener('resize', () => { if (currentSegments.length) renderTimeline(); });
 
   // ===== projects (save + load) =====
   async function saveProject(filename, segments, durationSeconds, language) {
