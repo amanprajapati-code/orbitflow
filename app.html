@@ -164,8 +164,8 @@
   /* center: preview */
   .center-col{display:flex; flex-direction:column; align-items:center; max-height:560px;}
   .preview-head{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
-  .video-frame{position:relative; display:inline-block; max-height:480px; max-width:100%; margin:0 auto; border-radius:14px; overflow:hidden; transition:aspect-ratio .2s ease; background:#000;}
-  .preview-video{display:block; max-height:480px; max-width:100%; width:auto; height:auto;}
+  .video-frame{position:relative; width:270px; height:480px; max-width:100%; margin:0 auto; border-radius:14px; overflow:hidden; background:#000; transition:width .2s ease, height .2s ease;}
+  .preview-video{width:100%; height:100%; display:block; object-fit:contain;}
   .caption-overlay{ position:absolute; left:50%; bottom:8%; transform:translateX(-50%); max-width:90%; text-align:center; pointer-events:none; opacity:0; transition:opacity .12s ease; }
   .caption-overlay.show{opacity:1; animation:capIn .18s ease-out;}
   @keyframes capIn{0%{transform:translateX(-50%) scale(.92);} 100%{transform:translateX(-50%) scale(1);}}
@@ -696,8 +696,10 @@
       document.querySelectorAll('.chip-btn[data-ratio]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const frame = document.querySelector('.video-frame');
-      const map = { orig: 'auto', '916': '9/16', '169': '16/9', '11': '1/1', '45': '4/5' };
-      frame.style.aspectRatio = map[btn.dataset.ratio];
+      const map = { orig: [270, 480], '916': [270, 480], '169': [480, 270], '11': [380, 380], '45': [300, 375] };
+      const [w, h] = map[btn.dataset.ratio];
+      frame.style.width = w + 'px';
+      frame.style.height = h + 'px';
     });
   });
 
