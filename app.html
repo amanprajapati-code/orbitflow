@@ -356,7 +356,7 @@
       <span class="ed-chip ed-chip-wm">✨ Remove watermark — ₹19</span>
       <button class="ed-icon-btn" title="Save (coming soon)" disabled>💾</button>
       <button class="btn btn-ghost btn-sm" disabled title="Coming soon">SRT</button>
-      <button class="btn btn-primary btn-sm" disabled title="Coming soon">Export</button>
+      <button class="btn btn-primary btn-sm" onclick="exportVideo()" id="exportBtn">Export</button>
     </div>
 
     <div id="statusLine" class="status-line" style="display:none;">
@@ -551,7 +551,35 @@
     document.getElementById('gateLoader').style.display = 'none';
     document.getElementById('appShell').style.display = 'flex';
     loadProjects();
+    refreshUsageDisplay();
   })();
+
+  const FREE_LIMIT_SECONDS = 300; // matches the edge function's FREE_MONTHLY_LIMIT_SECONDS
+
+  async function refreshUsageDisplay() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    const month = new Date().toISOString().slice(0, 7);
+    const { data: row } = await sb
+      .from('usage').select('seconds_used')
+      .eq('user_id', session.user.id).eq('month', month).maybeSingle();
+    const used = row?.seconds_used ?? 0;
+    applyUsage(used, FREE_LIMIT_SECONDS);
+  }
+
+  function applyUsage(used, limit) {
+    const usedMin = Math.round((used / 60) * 10) / 10;
+    const totalMin = Math.round(limit / 60);
+    const pct = Math.min(100, Math.round((used / limit) * 100));
+
+    const chip = document.getElementById('usageChip');
+    if (chip) chip.textContent = `${usedMin}/${totalMin} min`;
+
+    const sidebarBar = document.querySelector('.plan-card .bar span');
+    const sidebarSub = document.querySelector('.plan-card .plan-sub');
+    if (sidebarBar) sidebarBar.style.width = pct + '%';
+    if (sidebarSub) sidebarSub.textContent = `${Math.max(0, totalMin - usedMin)} min transcription left this month`;
+  }
 
   // ===== Audio extraction (native MediaRecorder) =====
   window.extractAudioBlob = function (file, onProgress) {
@@ -760,6 +788,7 @@
     document.getElementById('dashboardMain').style.display = 'none';
     document.getElementById('editorMain').style.display = 'block';
     document.getElementById('toolbarName').value = file.name.replace(/\.[^/.]+$/, '');
+    refreshUsageDisplay();
     previewVideo.src = URL.createObjectURL(file);
 
     statusLine.style.display = 'flex';
@@ -814,18 +843,17 @@
 
       const t2 = performance.now();
       console.info(`Upload + transcription took ${((t2 - t1) / 1000).toFixed(1)}s`);
+
+      if (typeof data.secondsLimit === 'number') {
+        applyUsage(data.secondsUsedThisMonth, data.secondsLimit);
+      }
+
       if (data.error) throw new Error(data.error);
       if (!data.segments || data.segments.length === 0) {
         statusLine.style.display = 'none'; progressBarWrap.style.display = 'none';
         errorBox.style.display = 'block';
         errorBox.textContent = 'No speech detected in this video.';
         return;
-      }
-
-      if (typeof data.secondsLimit === 'number') {
-        const usedMin = Math.round((data.secondsUsedThisMonth / 60) * 10) / 10;
-        const totalMin = Math.round(data.secondsLimit / 60);
-        document.getElementById('usageChip').textContent = `${usedMin}/${totalMin} min`;
       }
 
       // Build word list (real word-timestamps, or synthesize evenly from segments)
@@ -927,7 +955,131 @@
     });
   }
 
-  // ===== projects =====
+  // ===== EXPORT: canvas-composite recording (no ffmpeg — proven MediaRecorder approach) =====
+  const canvasStyleMap = {
+    'bold-beast': { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: '#000', upper: true },
+    'clean':      { family: 'Inter, sans-serif', weight: '700', color: '#B6FF6A', box: null, upper: false, glow: '#B6FF6A' },
+    'minimal':    { family: 'Inter, sans-serif', weight: '500', color: '#eee', box: null, upper: false },
+    'bubble':     { family: 'Inter, sans-serif', weight: '700', color: '#0B0F0C', box: '#B6FF6A', upper: false, pill: true },
+    'word-pop':   { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: null, upper: true },
+    'studio':     { family: 'Playfair Display, serif', weight: '600', color: '#fff', box: 'rgba(0,0,0,0.65)', upper: false },
+    'mrbeast':    { family: 'Inter, sans-serif', weight: '900', color: '#fff', box: null, upper: true, stroke: '#000' },
+    'hormozi':    { family: 'Inter, sans-serif', weight: '900', color: '#B6FF6A', box: null, upper: true, stroke: '#000' },
+    'aura':       { family: 'Playfair Display, serif', weight: '600', italic: true, color: '#fff', box: null, upper: false },
+    'swiss':      { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: '#000', upper: true },
+    'highlighted':{ family: 'Inter, sans-serif', weight: '600', color: '#ddd', box: null, upper: false },
+    'delhi':      { family: 'Playfair Display, serif', weight: '500', italic: true, color: '#fff', box: null, upper: false },
+  };
+
+  function drawCaptionOnCanvas(ctx, text, canvasW, canvasH) {
+    const st = canvasStyleMap[selectedStyle] || canvasStyleMap['bold-beast'];
+    const fontSize = Math.round(canvasH * 0.045);
+    ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${fontSize}px ${st.family}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const display = st.upper ? text.toUpperCase() : text;
+    const paddingX = fontSize * 0.6, paddingY = fontSize * 0.35;
+    const textW = ctx.measureText(display).width;
+    const boxW = textW + paddingX * 2, boxH = fontSize + paddingY * 2;
+    const cx = canvasW / 2, cy = canvasH * 0.86;
+
+    if (st.box) {
+      ctx.fillStyle = st.box;
+      const r = st.pill ? boxH / 2 : 6;
+      const x = cx - boxW / 2, y = cy - boxH / 2;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + boxW, y, x + boxW, y + boxH, r);
+      ctx.arcTo(x + boxW, y + boxH, x, y + boxH, r);
+      ctx.arcTo(x, y + boxH, x, y, r);
+      ctx.arcTo(x, y, x + boxW, y, r);
+      ctx.closePath();
+      ctx.fill();
+    }
+    if (st.glow) { ctx.shadowColor = st.glow; ctx.shadowBlur = fontSize * 0.5; }
+    else { ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = fontSize * 0.25; }
+
+    if (st.stroke) {
+      ctx.lineWidth = fontSize * 0.12;
+      ctx.strokeStyle = st.stroke;
+      ctx.strokeText(display, cx, cy);
+    }
+    ctx.fillStyle = st.color;
+    ctx.fillText(display, cx, cy);
+    ctx.shadowBlur = 0;
+  }
+
+  async function exportVideo() {
+    if (!selectedFile || currentChunks.length === 0) { alert('Generate captions first.'); return; }
+    const btn = document.getElementById('exportBtn');
+    const prevLabel = btn.textContent;
+    btn.disabled = true;
+
+    const exVideo = document.createElement('video');
+    exVideo.muted = false;
+    exVideo.playsInline = true;
+    exVideo.setAttribute('playsinline', '');
+    exVideo.style.cssText = 'position:fixed; top:-9999px; left:-9999px; width:2px; height:2px; opacity:0.01;';
+    exVideo.src = URL.createObjectURL(selectedFile);
+    document.body.appendChild(exVideo);
+
+    await new Promise((resolve) => { exVideo.onloadedmetadata = resolve; });
+
+    const maxSide = 720;
+    const scale = Math.min(1, maxSide / Math.max(exVideo.videoWidth, exVideo.videoHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(exVideo.videoWidth * scale);
+    canvas.height = Math.round(exVideo.videoHeight * scale);
+    const ctx = canvas.getContext('2d');
+
+    let audioTracks = [];
+    try { audioTracks = exVideo.captureStream().getAudioTracks(); } catch (e) { /* no audio track available */ }
+    const canvasStream = canvas.captureStream(30);
+    const combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
+
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+    const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 4_000_000 });
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    let rafId;
+    function drawFrame() {
+      ctx.drawImage(exVideo, 0, 0, canvas.width, canvas.height);
+      const t = exVideo.currentTime;
+      const chunk = currentChunks.find(c => t >= c.start && t <= c.end);
+      if (chunk) drawCaptionOnCanvas(ctx, chunk.text, canvas.width, canvas.height);
+      btn.textContent = `Exporting… ${Math.round((t / exVideo.duration) * 100)}%`;
+      rafId = requestAnimationFrame(drawFrame);
+    }
+
+    const finished = new Promise((resolve) => {
+      recorder.onstop = () => {
+        cancelAnimationFrame(rafId);
+        URL.revokeObjectURL(exVideo.src);
+        document.body.removeChild(exVideo);
+        resolve(new Blob(chunks, { type: 'video/webm' }));
+      };
+    });
+
+    recorder.start();
+    drawFrame();
+    exVideo.play();
+    exVideo.onended = () => { if (recorder.state !== 'inactive') recorder.stop(); };
+    setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, (exVideo.duration + 3) * 1000);
+
+    const blob = await finished;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (document.getElementById('toolbarName').value || 'captioned-video') + '.webm';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+  }
+
   async function saveProject(filename, chunks, durationSeconds, language) {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return;
