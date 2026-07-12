@@ -660,6 +660,29 @@
 
   // ===== STEP 3: editor =====
   const previewVideo = document.getElementById('previewVideo');
+
+  // Force-fit the video inside its frame using real math, in JS — not
+  // relying on CSS object-fit (some mobile browsers render it inconsistently).
+  function fitVideoToFrame() {
+    const frame = document.querySelector('.video-frame');
+    const frameW = frame.clientWidth;
+    const frameH = frame.clientHeight;
+    const vw = previewVideo.videoWidth;
+    const vh = previewVideo.videoHeight;
+    if (!vw || !vh || !frameW || !frameH) return;
+    const scale = Math.min(frameW / vw, frameH / vh);
+    const dispW = Math.round(vw * scale);
+    const dispH = Math.round(vh * scale);
+    previewVideo.style.position = 'absolute';
+    previewVideo.style.width = dispW + 'px';
+    previewVideo.style.height = dispH + 'px';
+    previewVideo.style.left = '50%';
+    previewVideo.style.top = '50%';
+    previewVideo.style.transform = 'translate(-50%, -50%)';
+    previewVideo.style.objectFit = 'fill'; // irrelevant now — box matches video exactly
+  }
+  previewVideo.addEventListener('loadedmetadata', fitVideoToFrame);
+  window.addEventListener('resize', fitVideoToFrame);
   const transcriptList = document.getElementById('transcriptList');
   const statusLine = document.getElementById('statusLine');
   const statusText = document.getElementById('statusText');
@@ -700,6 +723,7 @@
       const [w, h] = map[btn.dataset.ratio];
       frame.style.width = w + 'px';
       frame.style.height = h + 'px';
+      fitVideoToFrame();
     });
   });
 
