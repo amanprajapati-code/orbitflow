@@ -6,6 +6,43 @@
 <title>OrbitFlow — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  // Used ONLY to convert a finished export from webm to mp4 (a bounded,
+  // one-time file transcode — not the same use-case that caused problems
+  // when we tried using ffmpeg.wasm for live audio extraction earlier).
+  import { FFmpeg } from "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js";
+  import { fetchFile, toBlobURL } from "https://unpkg.com/@ffmpeg/util@0.12.2/dist/esm/index.js";
+
+  let ffmpegInstance = null;
+  async function getFFmpeg(onLog) {
+    if (ffmpegInstance) return ffmpegInstance;
+    const ff = new FFmpeg();
+    if (onLog) ff.on('log', ({ message }) => onLog(message));
+    const coreBase = "https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm";
+    const pkgBase = "https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm";
+    await ff.load({
+      coreURL: await toBlobURL(`${coreBase}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${coreBase}/ffmpeg-core.wasm`, "application/wasm"),
+      classWorkerURL: await toBlobURL(`${pkgBase}/worker.js`, "text/javascript"),
+    });
+    ffmpegInstance = ff;
+    return ff;
+  }
+
+  window.convertWebmToMp4 = async function (webmBlob, onProgress) {
+    const ff = await getFFmpeg();
+    const progressHandler = ({ progress }) => { if (onProgress) onProgress(Math.max(0, Math.min(1, progress))); };
+    ff.on('progress', progressHandler);
+    await ff.writeFile('in.webm', await fetchFile(webmBlob));
+    await ff.exec(['-i', 'in.webm', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', 'out.mp4']);
+    const data = await ff.readFile('out.mp4');
+    ff.off('progress', progressHandler);
+    await ff.deleteFile('in.webm');
+    await ff.deleteFile('out.mp4');
+    const ab = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+    return new Blob([ab], { type: 'video/mp4' });
+  };
+</script>
 <style>
   :root{
     --primary:#B6FF6A; --secondary:#7CFFB2; --accent-2:#4FD1FF;
@@ -971,16 +1008,23 @@
     'delhi':      { family: 'Playfair Display, serif', weight: '500', italic: true, color: '#fff', box: null, upper: false },
   };
 
-  function drawCaptionOnCanvas(ctx, text, canvasW, canvasH) {
+  function drawKineticCaption(ctx, chunkWords, t, canvasW, canvasH) {
     const st = canvasStyleMap[selectedStyle] || canvasStyleMap['bold-beast'];
     const fontSize = Math.round(canvasH * 0.045);
-    ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${fontSize}px ${st.family}`;
-    ctx.textAlign = 'center';
+    const activeFontSize = Math.round(fontSize * 1.18);
+    const gap = fontSize * 0.28;
     ctx.textBaseline = 'middle';
-    const display = st.upper ? text.toUpperCase() : text;
-    const paddingX = fontSize * 0.6, paddingY = fontSize * 0.35;
-    const textW = ctx.measureText(display).width;
-    const boxW = textW + paddingX * 2, boxH = fontSize + paddingY * 2;
+
+    const measurements = chunkWords.map(w => {
+      const isActive = t >= w.start && t <= w.end;
+      const fs = isActive ? activeFontSize : fontSize;
+      ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${fs}px ${st.family}`;
+      const text = st.upper ? w.word.toUpperCase() : w.word;
+      return { text, fs, width: ctx.measureText(text).width, isActive };
+    });
+    const totalW = measurements.reduce((a, m) => a + m.width, 0) + gap * (measurements.length - 1);
+    const paddingX = fontSize * 0.7, paddingY = fontSize * 0.5;
+    const boxW = totalW + paddingX * 2, boxH = activeFontSize * 1.3 + paddingY * 2;
     const cx = canvasW / 2, cy = canvasH * 0.86;
 
     if (st.box) {
@@ -996,16 +1040,24 @@
       ctx.closePath();
       ctx.fill();
     }
-    if (st.glow) { ctx.shadowColor = st.glow; ctx.shadowBlur = fontSize * 0.5; }
-    else { ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = fontSize * 0.25; }
 
-    if (st.stroke) {
-      ctx.lineWidth = fontSize * 0.12;
-      ctx.strokeStyle = st.stroke;
-      ctx.strokeText(display, cx, cy);
-    }
-    ctx.fillStyle = st.color;
-    ctx.fillText(display, cx, cy);
+    ctx.textAlign = 'left';
+    let x = cx - totalW / 2;
+    measurements.forEach(m => {
+      ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${m.fs}px ${st.family}`;
+      ctx.globalAlpha = m.isActive ? 1 : 0.55;
+      if (st.glow && m.isActive) { ctx.shadowColor = st.glow; ctx.shadowBlur = m.fs * 0.5; }
+      else { ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = m.fs * 0.2; }
+      if (st.stroke) {
+        ctx.lineWidth = m.fs * 0.12;
+        ctx.strokeStyle = st.stroke;
+        ctx.strokeText(m.text, x, cy);
+      }
+      ctx.fillStyle = m.isActive ? st.color : (st.box ? st.color : '#cfcfcf');
+      ctx.fillText(m.text, x, cy);
+      x += m.width + gap;
+    });
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
   }
 
@@ -1037,7 +1089,10 @@
     const canvasStream = canvas.captureStream(30);
     const combined = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
 
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm';
+    // Prefer native MP4 recording where the browser actually supports it
+    // (e.g. Safari) — zero risk, zero extra conversion step needed.
+    const nativeMp4 = MediaRecorder.isTypeSupported('video/mp4');
+    const mimeType = nativeMp4 ? 'video/mp4' : (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus' : 'video/webm');
     const recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: 4_000_000 });
     const chunks = [];
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
@@ -1047,8 +1102,8 @@
       ctx.drawImage(exVideo, 0, 0, canvas.width, canvas.height);
       const t = exVideo.currentTime;
       const chunk = currentChunks.find(c => t >= c.start && t <= c.end);
-      if (chunk) drawCaptionOnCanvas(ctx, chunk.text, canvas.width, canvas.height);
-      btn.textContent = `Exporting… ${Math.round((t / exVideo.duration) * 100)}%`;
+      if (chunk) drawKineticCaption(ctx, chunk.words, t, canvas.width, canvas.height);
+      btn.textContent = `Recording… ${Math.round((t / exVideo.duration) * 100)}%`;
       rafId = requestAnimationFrame(drawFrame);
     }
 
@@ -1057,7 +1112,7 @@
         cancelAnimationFrame(rafId);
         URL.revokeObjectURL(exVideo.src);
         document.body.removeChild(exVideo);
-        resolve(new Blob(chunks, { type: 'video/webm' }));
+        resolve(new Blob(chunks, { type: mimeType }));
       };
     });
 
@@ -1067,11 +1122,27 @@
     exVideo.onended = () => { if (recorder.state !== 'inactive') recorder.stop(); };
     setTimeout(() => { if (recorder.state !== 'inactive') recorder.stop(); }, (exVideo.duration + 3) * 1000);
 
-    const blob = await finished;
-    const url = URL.createObjectURL(blob);
+    let finalBlob = await finished;
+    let finalExt = nativeMp4 ? 'mp4' : 'webm';
+
+    // Convert to MP4 if we weren't able to record it natively.
+    if (!nativeMp4) {
+      try {
+        btn.textContent = 'Converting to MP4… 0%';
+        finalBlob = await window.convertWebmToMp4(finalBlob, (ratio) => {
+          btn.textContent = `Converting to MP4… ${Math.round(ratio * 100)}%`;
+        });
+        finalExt = 'mp4';
+      } catch (err) {
+        console.warn('MP4 conversion failed, keeping WebM:', err.message);
+        finalExt = 'webm';
+      }
+    }
+
+    const url = URL.createObjectURL(finalBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = (document.getElementById('toolbarName').value || 'captioned-video') + '.webm';
+    a.download = (document.getElementById('toolbarName').value || 'captioned-video') + '.' + finalExt;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
