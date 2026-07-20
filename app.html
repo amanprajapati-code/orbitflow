@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CapOrbit — Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@600;700;800&family=Montserrat:wght@700;800;900&family=Space+Grotesk:wght@500;600;700&family=Oswald:wght@600;700;800;900&family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module">
   // Used ONLY to convert a finished export from webm to mp4 (a bounded,
@@ -257,30 +257,48 @@
     .captions-col, .templates-col{max-height:360px;}
   }
 
-  .style-bold-beast{font-family:'Inter',sans-serif; font-weight:800; font-size:13px; color:#fff; background:#000; padding:3px 8px; border-radius:4px; text-transform:uppercase;}
-  .caption-overlay.style-bold-beast{font-size:17px;}
-  .style-clean{font-family:'Inter',sans-serif; font-weight:700; font-size:13px; color:var(--primary); text-shadow:0 0 8px rgba(182,255,106,0.7);}
-  .caption-overlay.style-clean{font-size:16px;}
-  .style-minimal{font-family:'Inter',sans-serif; font-weight:500; font-size:12px; color:#eee;}
-  .caption-overlay.style-minimal{font-size:14px;}
-  .style-bubble{font-family:'Inter',sans-serif; font-weight:700; font-size:12px; color:#0B0F0C; background:linear-gradient(135deg,var(--primary),var(--secondary)); padding:5px 12px; border-radius:999px;}
-  .caption-overlay.style-bubble{font-size:14px;}
-  .style-word-pop{font-family:'Inter',sans-serif; font-weight:800; font-size:14px; color:#fff;}
-  .caption-overlay.style-word-pop{font-size:19px;}
-  .style-studio{font-family:'Playfair Display',serif; font-weight:600; font-size:12px; color:#fff; background:rgba(0,0,0,0.65); padding:5px 12px; border-left:3px solid var(--primary);}
-  .caption-overlay.style-studio{font-size:15px;}
-  .style-mrbeast{font-family:'Inter',sans-serif; font-weight:900; font-size:13px; color:#fff; -webkit-text-stroke:1.3px #000; paint-order:stroke fill; text-transform:uppercase;}
-  .caption-overlay.style-mrbeast{font-size:18px; -webkit-text-stroke:2px #000;}
-  .style-hormozi{font-family:'Inter',sans-serif; font-weight:900; font-size:13px; color:var(--primary); -webkit-text-stroke:1.3px #000; paint-order:stroke fill; text-transform:uppercase;}
-  .caption-overlay.style-hormozi{font-size:18px; -webkit-text-stroke:2px #000;}
-  .style-aura{font-family:'Playfair Display',serif; font-style:italic; font-weight:600; font-size:13px; color:#fff;}
-  .caption-overlay.style-aura{font-size:17px;}
-  .style-swiss{font-family:'Inter',sans-serif; font-weight:800; font-size:11.5px; color:#fff; background:#000; padding:4px 9px; text-transform:uppercase;}
-  .caption-overlay.style-swiss{font-size:15px;}
-  .style-delhi{font-family:'Playfair Display',serif; font-weight:500; font-style:italic; font-size:13px; color:#fff;}
-  .caption-overlay.style-delhi{font-size:16px;}
-  .style-highlighted{font-family:'Inter',sans-serif; font-weight:600; font-size:12px; color:#ddd;}
-  .caption-overlay.style-highlighted{font-size:15px;}
+  /* ===== TEMPLATE ENGINE — CSS-variable driven, works for any template ===== */
+  .caption-overlay{
+    --tpl-font:'Inter',sans-serif; --tpl-weight:700; --tpl-style:normal; --tpl-case:none;
+    --tpl-color:#fff; --tpl-active:var(--primary); --tpl-letter:0em; --tpl-size:16px;
+    --tpl-box-bg:none; --tpl-box-radius:8px; --tpl-box-pad:6px 14px;
+    --tpl-stroke:0px; --tpl-stroke-color:#000; --tpl-glow:none; --tpl-shadow:0 2px 6px rgba(0,0,0,0.7);
+  }
+  .kword{
+    font-family:var(--tpl-font); font-weight:var(--tpl-weight); font-style:var(--tpl-style);
+    text-transform:var(--tpl-case); letter-spacing:var(--tpl-letter); font-size:var(--tpl-size);
+    color:var(--tpl-color); -webkit-text-stroke:var(--tpl-stroke) var(--tpl-stroke-color);
+    paint-order:stroke fill; text-shadow:var(--tpl-shadow);
+    display:inline-block; opacity:.52; transform:scale(1); margin:0 3px;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), opacity .15s ease, color .15s ease;
+  }
+  .kword-active{opacity:1; color:var(--tpl-active); transform:scale(1.18); filter:var(--tpl-glow);}
+  .caption-box{
+    display:inline-block; background:var(--tpl-box-bg); border-radius:var(--tpl-box-radius);
+    padding:var(--tpl-box-pad); max-width:100%;
+  }
+  /* animation styles applied to the whole caption-box on each new phrase */
+  @keyframes tplPop{0%{transform:scale(.85); opacity:0;} 100%{transform:scale(1); opacity:1;}}
+  @keyframes tplSlide{0%{transform:translateY(16px); opacity:0;} 100%{transform:translateY(0); opacity:1;}}
+  @keyframes tplBounce{0%{transform:scale(.6) translateY(10px); opacity:0;} 55%{transform:scale(1.1) translateY(-3px); opacity:1;} 100%{transform:scale(1) translateY(0);}}
+  @keyframes tplFade{0%{opacity:0;} 100%{opacity:1;}}
+  @keyframes tplType{0%{clip-path:inset(0 100% 0 0);} 100%{clip-path:inset(0 0 0 0);}}
+  .anim-pop .caption-box{animation:tplPop .22s cubic-bezier(.34,1.56,.64,1);}
+  .anim-slide .caption-box{animation:tplSlide .22s cubic-bezier(.16,.8,.3,1);}
+  .anim-bounce .caption-box{animation:tplBounce .32s cubic-bezier(.34,1.56,.64,1);}
+  .anim-fade .caption-box{animation:tplFade .25s ease-out;}
+  .anim-type .caption-box{animation:tplType .35s steps(20,end);}
+
+  /* ===== template gallery ===== */
+  .tpl-cat-row{display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; padding-bottom:4px;}
+  .tpl-cat-chip{flex:0 0 auto; padding:6px 12px; border-radius:999px; font-size:11px; font-weight:600; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-muted); cursor:pointer; white-space:nowrap;}
+  .tpl-cat-chip.active{background:rgba(182,255,106,0.14); color:var(--primary); border-color:rgba(182,255,106,0.4);}
+  .tpl-customize{display:none; gap:10px; align-items:center; margin-bottom:14px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border); flex-wrap:wrap;}
+  .tpl-customize.show{display:flex;}
+  .tpl-customize label{font-size:10.5px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+  .tpl-customize input[type=color]{width:28px; height:28px; border:none; border-radius:6px; padding:0; cursor:pointer; background:none;}
+  .tpl-customize select{padding:6px 8px; border-radius:7px; font-size:11.5px; background:rgba(255,255,255,0.05); border:1px solid var(--border); color:var(--text);}
+  .tpl-reset{font-size:11px; color:var(--primary); cursor:pointer; text-decoration:underline; margin-left:auto;}
 
   .status-line{display:flex; align-items:center; gap:10px; margin:0 18px 10px; font-size:13px; color:var(--text-muted);}
   .spinner{width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color:var(--primary); animation:spinAnim .7s linear infinite;}
@@ -463,20 +481,27 @@
           <button>My Presets</button>
         </div>
         <input type="text" id="styleSearch" class="style-search" placeholder="🔍 Find a template…">
-        <div class="style-grid" id="styleGrid">
-          <div class="glass style-card selected" data-style="bold-beast"><div class="style-preview style-bold-beast"><span class="demo-word">THE</span><span class="demo-word">QUICK</span></div><div class="style-card-name">Bold Beast</div><div class="tag-row"><span class="tag">Bold</span></div></div>
-          <div class="glass style-card" data-style="clean"><div class="style-preview style-clean"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Clean Glow</div><div class="tag-row"><span class="tag tag-popular">Popular</span></div></div>
-          <div class="glass style-card" data-style="minimal"><div class="style-preview style-minimal"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Minimal</div><div class="tag-row"><span class="tag">Clean</span></div></div>
-          <div class="glass style-card" data-style="bubble"><div class="style-preview style-bubble"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Bubble</div><div class="tag-row"><span class="tag">Playful</span></div></div>
-          <div class="glass style-card" data-style="word-pop"><div class="style-preview style-word-pop"><span class="demo-word">THE</span><span class="demo-word">QUICK</span></div><div class="style-card-name">Word Pop</div><div class="tag-row"><span class="tag">Kinetic</span></div></div>
-          <div class="glass style-card" data-style="studio"><div class="style-preview style-studio"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Studio</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="mrbeast"><div class="style-preview style-mrbeast"><span class="demo-word">THE</span><span class="demo-word">QUICK</span></div><div class="style-card-name">MrBeast</div><div class="tag-row"><span class="tag">Kinetic</span></div></div>
-          <div class="glass style-card" data-style="hormozi"><div class="style-preview style-hormozi"><span class="demo-word">THE</span><span class="demo-word">QUICK</span></div><div class="style-card-name">Hormozi</div><div class="tag-row"><span class="tag tag-popular">Popular</span></div></div>
-          <div class="glass style-card" data-style="aura"><div class="style-preview style-aura"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Aura</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="swiss"><div class="style-preview style-swiss"><span class="demo-word">THE</span><span class="demo-word">QUICK</span></div><div class="style-card-name">Swiss</div><div class="tag-row"><span class="tag tag-editorial">Editorial</span></div></div>
-          <div class="glass style-card" data-style="highlighted"><div class="style-preview style-highlighted"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Highlighted</div><div class="tag-row"><span class="tag tag-new">New</span></div></div>
-          <div class="glass style-card" data-style="delhi"><div class="style-preview style-delhi"><span class="demo-word">the</span><span class="demo-word">quick</span></div><div class="style-card-name">Delhi</div><div class="tag-row"><span class="tag">Serif</span></div></div>
+        <div class="tpl-cat-row" id="tplCatRow"></div>
+
+        <div class="tpl-customize" id="tplCustomize">
+          <label>Color</label>
+          <input type="color" id="tplColorPicker" value="#B6FF6A">
+          <label>Font</label>
+          <select id="tplFontPicker">
+            <option value="">Default</option>
+            <option value="'Inter',sans-serif">Inter</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="'Montserrat',sans-serif">Montserrat</option>
+            <option value="'Space Grotesk',sans-serif">Space Grotesk</option>
+            <option value="'Oswald',sans-serif">Oswald</option>
+            <option value="'Bebas Neue',sans-serif">Bebas Neue</option>
+            <option value="'Playfair Display',serif">Playfair Display</option>
+            <option value="'DM Serif Display',serif">DM Serif Display</option>
+          </select>
+          <span class="tpl-reset" onclick="resetTemplateCustomization()">Reset</span>
         </div>
+
+        <div class="style-grid" id="styleGrid"></div>
       </div>
 
       <!-- FULL-WIDTH: Timeline -->
@@ -754,7 +779,133 @@
   const errorBox = document.getElementById('errorBox');
   let currentChunks = [];
   let allWords = [];
-  let selectedStyle = 'bold-beast';
+
+  // ===== TEMPLATE ENGINE =====
+  // Each template is pure data — add a new one here and it automatically
+  // gets every feature (word animation, stroke/glow/shadow, rounded box,
+  // color + font customization, canvas export) for free.
+  const TEMPLATES = [
+    { id:'studio-clean', name:'Studio Clean', cat:'Talking Head', tags:['Clean'], font:"'Inter',sans-serif", weight:800, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.048, box:'#000000', radius:6, shadow:'0 2px 6px rgba(0,0,0,.8)', anim:'pop' },
+    { id:'mic-check', name:'Mic Check', cat:'Podcast', tags:['Bold'], font:"'Poppins',sans-serif", weight:800, case:'none', color:'#fff', active:'#FFD166', size:0.05, stroke:1.5, strokeColor:'#000', anim:'bounce' },
+    { id:'chalkboard', name:'Chalkboard Pro', cat:'Education', tags:['Clean'], font:"'Space Grotesk',sans-serif", weight:600, case:'none', color:'#EAEAEA', active:'#7CFFB2', size:0.044, box:'rgba(0,0,0,.55)', radius:8, anim:'slide' },
+    { id:'rise-grind', name:'Rise & Grind', cat:'Motivation', tags:['Bold','Popular'], font:"'Montserrat',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#FF6B4A', size:0.05, glow:true, anim:'pop' },
+    { id:'narrator', name:'The Narrator', cat:'Documentary', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#F2F2F2', active:'#FFD166', size:0.046, shadow:'0 3px 10px rgba(0,0,0,.9)', anim:'fade' },
+    { id:'boardroom', name:'Boardroom', cat:'Business', tags:['Clean'], font:"'Inter',sans-serif", weight:700, case:'none', color:'#fff', active:'#4FD1FF', size:0.044, box:'#0B1420', radius:6, anim:'slide' },
+    { id:'product-blue', name:'Product Blue', cat:'SaaS', tags:['Kinetic'], font:"'Space Grotesk',sans-serif", weight:700, case:'none', color:'#EAF6FF', active:'#4FD1FF', size:0.046, glow:true, anim:'pop' },
+    { id:'runway', name:'Runway Edit', cat:'Fashion', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#fff', active:'#F5C6D6', size:0.048, shadow:'0 3px 12px rgba(0,0,0,.85)', anim:'fade' },
+    { id:'beast-energy', name:'Beast Energy', cat:'Fitness', tags:['Bold','Popular'], font:"'Oswald',sans-serif", weight:800, case:'uppercase', color:'#fff', active:'#FF3B3B', size:0.052, stroke:2, strokeColor:'#000', anim:'pop' },
+    { id:'foodie-pop', name:'Foodie Pop', cat:'Food', tags:['Playful'], font:"'Poppins',sans-serif", weight:700, case:'none', color:'#2B1600', active:'#fff', size:0.046, box:'#FFB238', radius:999, anim:'bounce' },
+    { id:'level-up', name:'Level Up', cat:'Gaming', tags:['Kinetic'], font:"'Bebas Neue',sans-serif", weight:400, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.056, stroke:2, strokeColor:'#000', glow:true, anim:'pop' },
+    { id:'wanderlust', name:'Wanderlust', cat:'Travel', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#fff', active:'#FFE9A8', size:0.047, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
+    { id:'bull-run', name:'Bull Run', cat:'Finance', tags:['Clean'], font:"'Space Grotesk',sans-serif", weight:700, case:'none', color:'#EFFFF4', active:'#2ECC71', size:0.045, box:'#0B1F14', radius:6, anim:'slide' },
+    { id:'widescreen', name:'Widescreen', cat:'Cinematic', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, case:'none', color:'#F5F5F5', active:'#fff', size:0.045, shadow:'0 4px 16px rgba(0,0,0,.95)', anim:'fade' },
+    { id:'gold-standard', name:'Gold Standard', cat:'Luxury', tags:['Editorial','Popular'], font:"'Playfair Display',serif", weight:600, italic:true, case:'none', color:'#D4AF37', active:'#fff', size:0.048, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
+    { id:'caption-chaos', name:'Caption Chaos', cat:'Meme', tags:['Bold'], font:"'Oswald',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#FFE600', size:0.054, stroke:2.5, strokeColor:'#000', anim:'bounce' },
+    { id:'once-upon', name:'Once Upon', cat:'Storytelling', tags:['Editorial'], font:"'Playfair Display',serif", weight:500, italic:true, case:'none', color:'#FFF3D6', active:'#B6FF6A', size:0.046, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
+    { id:'whisper', name:'Whisper', cat:'Minimal', tags:['Clean'], font:"'Inter',sans-serif", weight:500, case:'none', color:'#E7E7E7', active:'#fff', size:0.04, anim:'fade' },
+    { id:'powerhouse', name:'Powerhouse', cat:'Bold', tags:['Bold','Kinetic'], font:"'Oswald',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.055, stroke:2.5, strokeColor:'#000', shadow:'0 3px 8px rgba(0,0,0,.9)', anim:'pop' },
+    { id:'aurora-glow', name:'Aurora Glow', cat:'Premium Gradient', tags:['New','Kinetic'], font:"'Montserrat',sans-serif", weight:800, case:'none', color:'#EAFBFF', active:'#7CFFB2', size:0.048, glow:true, box:'rgba(20,10,40,.5)', radius:10, anim:'bounce' },
+  ];
+  const CATEGORIES = ['All', ...Array.from(new Set(TEMPLATES.map(t => t.cat)))];
+
+  let selectedTemplateId = TEMPLATES[0].id;
+  let customOverride = { color: null, font: null };
+
+  function getSelectedTemplate() {
+    return TEMPLATES.find(t => t.id === selectedTemplateId) || TEMPLATES[0];
+  }
+
+  function applyTemplateVars(el, tpl) {
+    el.style.setProperty('--tpl-font', customOverride.font || tpl.font);
+    el.style.setProperty('--tpl-weight', tpl.weight);
+    el.style.setProperty('--tpl-style', tpl.italic ? 'italic' : 'normal');
+    el.style.setProperty('--tpl-case', tpl.case === 'uppercase' ? 'uppercase' : 'none');
+    el.style.setProperty('--tpl-color', tpl.color);
+    el.style.setProperty('--tpl-active', customOverride.color || tpl.active);
+    el.style.setProperty('--tpl-letter', tpl.case === 'uppercase' ? '.02em' : '0em');
+    el.style.setProperty('--tpl-box-bg', tpl.box || 'none');
+    el.style.setProperty('--tpl-box-radius', (tpl.radius ?? 8) + 'px');
+    el.style.setProperty('--tpl-stroke', (tpl.stroke || 0) + 'px');
+    el.style.setProperty('--tpl-stroke-color', tpl.strokeColor || '#000');
+    el.style.setProperty('--tpl-shadow', tpl.shadow || (tpl.glow ? `0 0 12px ${customOverride.color || tpl.active}` : '0 2px 6px rgba(0,0,0,.7)'));
+    el.className = el.className.replace(/anim-\w+/g, '').trim();
+    el.classList.add('anim-' + (tpl.anim || 'fade'));
+  }
+
+  function renderCategoryChips() {
+    const row = document.getElementById('tplCatRow');
+    row.innerHTML = CATEGORIES.map((c, i) =>
+      `<button class="tpl-cat-chip${i === 0 ? ' active' : ''}" data-cat="${c}">${c}</button>`
+    ).join('');
+    row.querySelectorAll('.tpl-cat-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        row.querySelectorAll('.tpl-cat-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        renderTemplateGrid(chip.dataset.cat, document.getElementById('styleSearch').value);
+      });
+    });
+  }
+
+  function renderTemplateGrid(cat = 'All', query = '') {
+    const grid = document.getElementById('styleGrid');
+    const q = query.trim().toLowerCase();
+    const list = TEMPLATES.filter(t =>
+      (cat === 'All' || t.cat === cat) &&
+      (!q || t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q))
+    );
+    grid.innerHTML = list.map(t => {
+      const previewStyle = `
+        font-family:${t.font}; font-weight:${t.weight}; font-style:${t.italic ? 'italic' : 'normal'};
+        text-transform:${t.case === 'uppercase' ? 'uppercase' : 'none'}; color:${t.color};
+        ${t.stroke ? `-webkit-text-stroke:${t.stroke}px ${t.strokeColor}; paint-order:stroke fill;` : ''}
+        ${t.shadow ? `text-shadow:${t.shadow};` : (t.glow ? `text-shadow:0 0 10px ${t.active};` : '')}
+      `;
+      const boxStyle = t.box ? `background:${t.box}; border-radius:${t.radius ?? 8}px; padding:5px 12px; display:inline-block;` : '';
+      return `
+        <div class="glass style-card${t.id === selectedTemplateId ? ' selected' : ''}" data-id="${t.id}">
+          <div class="style-preview">
+            <div style="${boxStyle}">
+              <span class="demo-word" style="${previewStyle}">the</span>
+              <span class="demo-word" style="${previewStyle} color:${t.active};">quick</span>
+            </div>
+          </div>
+          <div class="style-card-name">${t.name}</div>
+          <div class="tag-row">${t.tags.map(tag => `<span class="tag${tag === 'Popular' ? ' tag-popular' : tag === 'New' ? ' tag-new' : tag === 'Editorial' ? ' tag-editorial' : ''}">${tag}</span>`).join('')}</div>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('.style-card').forEach(card => {
+      card.addEventListener('click', () => {
+        grid.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedTemplateId = card.dataset.id;
+        customOverride = { color: null, font: null };
+        document.getElementById('tplColorPicker').value = getSelectedTemplate().active;
+        document.getElementById('tplFontPicker').value = '';
+        document.getElementById('tplCustomize').classList.add('show');
+        const overlay = document.getElementById('captionOverlay');
+        applyTemplateVars(overlay, getSelectedTemplate());
+      });
+    });
+  }
+
+  function resetTemplateCustomization() {
+    customOverride = { color: null, font: null };
+    document.getElementById('tplColorPicker').value = getSelectedTemplate().active;
+    document.getElementById('tplFontPicker').value = '';
+    applyTemplateVars(document.getElementById('captionOverlay'), getSelectedTemplate());
+  }
+  document.getElementById('tplColorPicker').addEventListener('input', (e) => {
+    customOverride.color = e.target.value;
+    applyTemplateVars(document.getElementById('captionOverlay'), getSelectedTemplate());
+  });
+  document.getElementById('tplFontPicker').addEventListener('change', (e) => {
+    customOverride.font = e.target.value || null;
+    applyTemplateVars(document.getElementById('captionOverlay'), getSelectedTemplate());
+  });
+
+  renderCategoryChips();
+  renderTemplateGrid();
 
   function switchTab(name) { /* no-op — desktop layout shows all panels at once */ }
 
@@ -793,20 +944,8 @@
   });
 
   document.getElementById('styleSearch').addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    document.querySelectorAll('#styleGrid .style-card').forEach(card => {
-      const name = card.querySelector('.style-card-name').textContent.toLowerCase();
-      card.style.display = name.includes(q) ? '' : 'none';
-    });
-  });
-  document.querySelectorAll('.style-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedStyle = card.dataset.style;
-      const overlay = document.getElementById('captionOverlay');
-      overlay.className = 'caption-overlay style-' + selectedStyle + (overlay.classList.contains('show') ? ' show' : '');
-    });
+    const activeCat = document.querySelector('.tpl-cat-chip.active')?.dataset.cat || 'All';
+    renderTemplateGrid(activeCat, e.target.value);
   });
 
   async function startTranscription() {
@@ -942,7 +1081,7 @@
 
   function setupCaptionSync() {
     const overlay = document.getElementById('captionOverlay');
-    overlay.className = 'caption-overlay style-' + selectedStyle;
+    applyTemplateVars(overlay, getSelectedTemplate());
     previewVideo.addEventListener('timeupdate', () => {
       const t = previewVideo.currentTime;
       const chunk = currentChunks.find(c => t >= c.start && t <= c.end);
@@ -950,7 +1089,7 @@
       if (chunk) {
         if (chunk.start !== lastChunkStart) {
           lastChunkStart = chunk.start;
-          overlay.innerHTML = chunk.words.map(w => `<span class="kword">${w.word}</span>`).join(' ');
+          overlay.innerHTML = `<div class="caption-box">${chunk.words.map(w => `<span class="kword">${w.word}</span>`).join(' ')}</div>`;
           activeWordEls = Array.from(overlay.querySelectorAll('.kword')).map((el, i) => ({ el, start: chunk.words[i].start, end: chunk.words[i].end }));
           overlay.classList.remove('show');
           void overlay.offsetWidth;
@@ -993,24 +1132,11 @@
   }
 
   // ===== EXPORT: canvas-composite recording (no ffmpeg — proven MediaRecorder approach) =====
-  const canvasStyleMap = {
-    'bold-beast': { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: '#000', upper: true },
-    'clean':      { family: 'Inter, sans-serif', weight: '700', color: '#B6FF6A', box: null, upper: false, glow: '#B6FF6A' },
-    'minimal':    { family: 'Inter, sans-serif', weight: '500', color: '#eee', box: null, upper: false },
-    'bubble':     { family: 'Inter, sans-serif', weight: '700', color: '#0B0F0C', box: '#B6FF6A', upper: false, pill: true },
-    'word-pop':   { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: null, upper: true },
-    'studio':     { family: 'Playfair Display, serif', weight: '600', color: '#fff', box: 'rgba(0,0,0,0.65)', upper: false },
-    'mrbeast':    { family: 'Inter, sans-serif', weight: '900', color: '#fff', box: null, upper: true, stroke: '#000' },
-    'hormozi':    { family: 'Inter, sans-serif', weight: '900', color: '#B6FF6A', box: null, upper: true, stroke: '#000' },
-    'aura':       { family: 'Playfair Display, serif', weight: '600', italic: true, color: '#fff', box: null, upper: false },
-    'swiss':      { family: 'Inter, sans-serif', weight: '800', color: '#fff', box: '#000', upper: true },
-    'highlighted':{ family: 'Inter, sans-serif', weight: '600', color: '#ddd', box: null, upper: false },
-    'delhi':      { family: 'Playfair Display, serif', weight: '500', italic: true, color: '#fff', box: null, upper: false },
-  };
-
   function drawKineticCaption(ctx, chunkWords, t, canvasW, canvasH) {
-    const st = canvasStyleMap[selectedStyle] || canvasStyleMap['bold-beast'];
-    const fontSize = Math.round(canvasH * 0.045);
+    const tpl = getSelectedTemplate();
+    const family = customOverride.font || tpl.font;
+    const activeColor = customOverride.color || tpl.active;
+    const fontSize = Math.round(canvasH * (tpl.size || 0.045));
     const activeFontSize = Math.round(fontSize * 1.18);
     const gap = fontSize * 0.28;
     ctx.textBaseline = 'middle';
@@ -1018,8 +1144,8 @@
     const measurements = chunkWords.map(w => {
       const isActive = t >= w.start && t <= w.end;
       const fs = isActive ? activeFontSize : fontSize;
-      ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${fs}px ${st.family}`;
-      const text = st.upper ? w.word.toUpperCase() : w.word;
+      ctx.font = `${tpl.italic ? 'italic ' : ''}${tpl.weight} ${fs}px ${family}`;
+      const text = tpl.case === 'uppercase' ? w.word.toUpperCase() : w.word;
       return { text, fs, width: ctx.measureText(text).width, isActive };
     });
     const totalW = measurements.reduce((a, m) => a + m.width, 0) + gap * (measurements.length - 1);
@@ -1027,9 +1153,9 @@
     const boxW = totalW + paddingX * 2, boxH = activeFontSize * 1.3 + paddingY * 2;
     const cx = canvasW / 2, cy = canvasH * 0.86;
 
-    if (st.box) {
-      ctx.fillStyle = st.box;
-      const r = st.pill ? boxH / 2 : 6;
+    if (tpl.box) {
+      ctx.fillStyle = tpl.box;
+      const r = tpl.radius >= 100 ? boxH / 2 : (tpl.radius || 6);
       const x = cx - boxW / 2, y = cy - boxH / 2;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -1044,16 +1170,16 @@
     ctx.textAlign = 'left';
     let x = cx - totalW / 2;
     measurements.forEach(m => {
-      ctx.font = `${st.italic ? 'italic ' : ''}${st.weight} ${m.fs}px ${st.family}`;
+      ctx.font = `${tpl.italic ? 'italic ' : ''}${tpl.weight} ${m.fs}px ${family}`;
       ctx.globalAlpha = m.isActive ? 1 : 0.55;
-      if (st.glow && m.isActive) { ctx.shadowColor = st.glow; ctx.shadowBlur = m.fs * 0.5; }
+      if (tpl.glow && m.isActive) { ctx.shadowColor = activeColor; ctx.shadowBlur = m.fs * 0.5; }
       else { ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = m.fs * 0.2; }
-      if (st.stroke) {
-        ctx.lineWidth = m.fs * 0.12;
-        ctx.strokeStyle = st.stroke;
+      if (tpl.stroke) {
+        ctx.lineWidth = m.fs * (tpl.stroke / 14);
+        ctx.strokeStyle = tpl.strokeColor || '#000';
         ctx.strokeText(m.text, x, cy);
       }
-      ctx.fillStyle = m.isActive ? st.color : (st.box ? st.color : '#cfcfcf');
+      ctx.fillStyle = m.isActive ? activeColor : tpl.color;
       ctx.fillText(m.text, x, cy);
       x += m.width + gap;
     });
