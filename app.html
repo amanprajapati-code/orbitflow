@@ -203,9 +203,99 @@
   .preview-head{display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
   .video-frame{position:relative; width:270px; height:480px; max-width:100%; margin:0 auto; border-radius:14px; overflow:hidden; background:#000; transition:width .2s ease, height .2s ease;}
   .preview-video{width:100%; height:100%; display:block; object-fit:contain;}
-  .caption-overlay{ position:absolute; left:50%; bottom:8%; transform:translateX(-50%); max-width:90%; text-align:center; pointer-events:none; opacity:0; transition:opacity .12s ease; }
-  .caption-overlay.show{opacity:1; animation:capIn .18s ease-out;}
-  @keyframes capIn{0%{transform:translateX(-50%) scale(.92);} 100%{transform:translateX(-50%) scale(1);}}
+
+  /* ===== TEMPLATE ENGINE v2 — professional subtitle rendering ===== */
+  /* Fixed caption container — bottom-anchored, centered, never shifts layout.
+     A fixed-height flex box keeps 1- and 2-line captions perfectly stable. */
+  .caption-overlay{
+    position:absolute; left:50%; bottom:11%; transform:translateX(-50%);
+    width:88%; max-width:88%; min-height:2.1em;
+    display:flex; align-items:flex-end; justify-content:center;
+    text-align:center; pointer-events:none; opacity:0;
+    transition:opacity .16s ease; will-change:opacity;
+    --tpl-font:'Inter',sans-serif; --tpl-weight:700; --tpl-style:normal; --tpl-case:none;
+    --tpl-color:#fff; --tpl-active:var(--primary); --tpl-letter:0em; --tpl-size:16px;
+    --tpl-line:1.18; --tpl-word-gap:.30em;
+    --tpl-box-bg:none; --tpl-box-radius:10px; --tpl-box-pad:.34em .72em;
+    --tpl-stroke:0px; --tpl-stroke-color:#000; --tpl-shadow:0 2px 8px rgba(0,0,0,.55);
+    --tpl-ease:cubic-bezier(.22,.61,.36,1);
+  }
+  .caption-overlay.show{opacity:1;}
+
+  /* The phrase box — fixed alignment, wraps to a strict max of 2 lines. */
+  .caption-box{
+    display:inline-block; background:var(--tpl-box-bg);
+    border-radius:var(--tpl-box-radius); padding:var(--tpl-box-pad);
+    max-width:100%; line-height:var(--tpl-line);
+    word-spacing:0; text-wrap:balance;
+  }
+
+  .kword{
+    font-family:var(--tpl-font); font-weight:var(--tpl-weight); font-style:var(--tpl-style);
+    text-transform:var(--tpl-case); letter-spacing:var(--tpl-letter); font-size:var(--tpl-size);
+    color:var(--tpl-color); -webkit-text-stroke:var(--tpl-stroke) var(--tpl-stroke-color);
+    paint-order:stroke fill; text-shadow:var(--tpl-shadow);
+    display:inline-block; margin:0 calc(var(--tpl-word-gap) / 2);
+    transition:
+      color .22s var(--tpl-ease),
+      opacity .22s var(--tpl-ease),
+      transform .28s var(--tpl-ease),
+      filter .28s var(--tpl-ease),
+      -webkit-text-stroke-color .22s var(--tpl-ease);
+    transform:translateZ(0);
+  }
+
+  /* --- Highlight styles (how a word looks while being spoken) --- */
+  /* hl-color: just recolors the active word (Netflix/doc/minimal feel) */
+  .hl-color .kword{opacity:.62;}
+  .hl-color .kword-active{opacity:1; color:var(--tpl-active);}
+
+  /* hl-lift: recolor + gentle scale + tiny rise (TikTok/creator feel) */
+  .hl-lift .kword{opacity:.55;}
+  .hl-lift .kword-active{opacity:1; color:var(--tpl-active); transform:translateY(-.04em) scale(1.08);}
+
+  /* hl-fill: pill/box background travels to the active word */
+  .hl-fill .kword{opacity:.72; padding:.04em .16em; border-radius:.28em;}
+  .hl-fill .kword-active{opacity:1; color:var(--tpl-fill-text,#000); background:var(--tpl-active);}
+
+  /* hl-glow: active word glows (gaming/motivational) */
+  .hl-glow .kword{opacity:.5;}
+  .hl-glow .kword-active{opacity:1; color:var(--tpl-active);
+    text-shadow:0 0 .5em var(--tpl-active), var(--tpl-shadow); transform:scale(1.06);}
+
+  /* hl-underline: soft animated underline (corporate/apple) */
+  .hl-underline .kword{opacity:.68; background-image:linear-gradient(var(--tpl-active),var(--tpl-active));
+    background-size:0% .09em; background-position:0 100%; background-repeat:no-repeat;
+    padding-bottom:.06em; transition:background-size .24s var(--tpl-ease), opacity .22s var(--tpl-ease), color .22s var(--tpl-ease);}
+  .hl-underline .kword-active{opacity:1; color:var(--tpl-active); background-size:100% .09em;}
+
+  /* hl-none: every word full opacity, differentiation via entry only (luxury/soft) */
+  .hl-none .kword{opacity:1;}
+  .hl-none .kword-active{color:var(--tpl-active);}
+
+  /* --- Phrase entry animations (played once per new phrase) --- */
+  @keyframes eFade{from{opacity:0;} to{opacity:1;}}
+  @keyframes eFadeUp{from{opacity:0; transform:translateY(.5em);} to{opacity:1; transform:none;}}
+  @keyframes eSlideUp{from{opacity:0; transform:translateY(1.1em);} to{opacity:1; transform:none;}}
+  @keyframes eSoftScale{from{opacity:0; transform:scale(.9);} to{opacity:1; transform:scale(1);}}
+  @keyframes eSpring{0%{opacity:0; transform:translateY(.7em) scale(.94);} 60%{opacity:1; transform:translateY(-.05em) scale(1.01);} 100%{transform:none;}}
+  @keyframes eBlur{from{opacity:0; filter:blur(8px);} to{opacity:1; filter:blur(0);}}
+
+  .enter-fade .caption-box{animation:eFade .32s var(--tpl-ease) both;}
+  .enter-fadeup .caption-box{animation:eFadeUp .40s var(--tpl-ease) both;}
+  .enter-slideup .caption-box{animation:eSlideUp .44s cubic-bezier(.16,.84,.3,1) both;}
+  .enter-scale .caption-box{animation:eSoftScale .40s var(--tpl-ease) both;}
+  .enter-spring .caption-box{animation:eSpring .5s cubic-bezier(.34,1.4,.5,1) both;}
+  .enter-blur .caption-box{animation:eBlur .46s var(--tpl-ease) both;}
+
+  /* Per-word staggered reveal (word-reveal / mask / char) — set inline via --wi */
+  .reveal-word .kword{animation:eFadeUp .38s var(--tpl-ease) both; animation-delay:calc(var(--wi,0) * .055s);}
+  .reveal-blur .kword{animation:eBlur .42s var(--tpl-ease) both; animation-delay:calc(var(--wi,0) * .06s);}
+  .reveal-mask .kword{animation:eSlideUp .40s cubic-bezier(.16,.84,.3,1) both; animation-delay:calc(var(--wi,0) * .05s);}
+
+  @media (prefers-reduced-motion: reduce){
+    .kword, .caption-box, .caption-overlay{animation:none !important; transition:opacity .15s ease !important;}
+  }
 
   /* right: templates */
   .templates-col{max-height:560px; overflow-y:auto;}
@@ -246,53 +336,12 @@
   .waveform{display:flex; align-items:flex-end; gap:1px; height:22px; margin-top:4px;}
   .waveform span{flex:1; background:rgba(182,255,106,0.25); border-radius:1px; min-width:2px;}
 
-  .demo-word{display:inline-block; margin:0 2px; animation:demoPulse 1.8s ease-in-out infinite;}
-  .demo-word:nth-child(2){animation-delay:.3s;}
-  @keyframes demoPulse{0%,60%,100%{opacity:.5; transform:scale(1);} 20%{opacity:1; transform:scale(1.15);}}
+  .demo-word{display:inline-block; margin:0 2px;}
 
   @media (max-width:1050px){
     .editor-grid{grid-template-columns:1fr;}
     .captions-col, .templates-col{max-height:360px;}
   }
-
-  /* ===== TEMPLATE ENGINE — CSS-variable driven, works for any template ===== */
-  .caption-overlay{
-    --tpl-font:'Inter',sans-serif; --tpl-weight:700; --tpl-style:normal; --tpl-case:none;
-    --tpl-color:#fff; --tpl-active:var(--primary); --tpl-letter:0em; --tpl-size:16px;
-    --tpl-box-bg:none; --tpl-box-radius:8px; --tpl-box-pad:6px 14px;
-    --tpl-stroke:0px; --tpl-stroke-color:#000; --tpl-glow:none; --tpl-shadow:0 2px 6px rgba(0,0,0,0.7);
-  }
-  .kword{
-    font-family:var(--tpl-font); font-weight:var(--tpl-weight); font-style:var(--tpl-style);
-    text-transform:var(--tpl-case); letter-spacing:var(--tpl-letter); font-size:var(--tpl-size);
-    color:var(--tpl-color); -webkit-text-stroke:var(--tpl-stroke) var(--tpl-stroke-color);
-    paint-order:stroke fill; text-shadow:var(--tpl-shadow);
-    display:inline-block; opacity:.52; transform:scale(1); margin:0 3px;
-    transition:transform .15s cubic-bezier(.34,1.56,.64,1), opacity .15s ease, color .15s ease;
-  }
-  .kword-active{opacity:1; color:var(--tpl-active);}
-  .anim-pop .kword-active{transform:scale(1.28);}
-  .anim-bounce .kword-active{transform:translateY(-8px) scale(1.2);}
-  .anim-slide .kword-active{transform:translateY(-4px) scale(1.06);}
-  .anim-fade .kword-active{transform:scale(1.03);}
-  .anim-type .kword{transition:opacity .18s ease; transform:none !important;}
-  .anim-type .kword.kword-unspoken{opacity:0;}
-  .anim-type .kword-active{opacity:1;}
-  .caption-box{
-    display:inline-block; background:var(--tpl-box-bg); border-radius:var(--tpl-box-radius);
-    padding:var(--tpl-box-pad); max-width:100%;
-  }
-  /* animation styles applied to the whole caption-box on each new phrase */
-  @keyframes tplPop{0%{transform:scale(.85); opacity:0;} 100%{transform:scale(1); opacity:1;}}
-  @keyframes tplSlide{0%{transform:translateY(16px); opacity:0;} 100%{transform:translateY(0); opacity:1;}}
-  @keyframes tplBounce{0%{transform:scale(.6) translateY(10px); opacity:0;} 55%{transform:scale(1.1) translateY(-3px); opacity:1;} 100%{transform:scale(1) translateY(0);}}
-  @keyframes tplFade{0%{opacity:0;} 100%{opacity:1;}}
-  @keyframes tplType{0%{clip-path:inset(0 100% 0 0);} 100%{clip-path:inset(0 0 0 0);}}
-  .anim-pop .caption-box{animation:tplPop .22s cubic-bezier(.34,1.56,.64,1);}
-  .anim-slide .caption-box{animation:tplSlide .22s cubic-bezier(.16,.8,.3,1);}
-  .anim-bounce .caption-box{animation:tplBounce .32s cubic-bezier(.34,1.56,.64,1);}
-  .anim-fade .caption-box{animation:tplFade .25s ease-out;}
-  .anim-type .caption-box{animation:tplType .35s steps(20,end);}
 
   /* ===== template gallery ===== */
   .tpl-cat-row{display:flex; gap:6px; overflow-x:auto; margin-bottom:12px; padding-bottom:4px;}
@@ -471,7 +520,7 @@
         </div>
         <div class="video-frame">
           <video id="previewVideo" playsinline></video>
-          <div id="captionOverlay" class="caption-overlay style-bold-beast"></div>
+          <div id="captionOverlay" class="caption-overlay"></div>
         </div>
       </div>
 
@@ -786,30 +835,31 @@
   let allWords = [];
 
   // ===== TEMPLATE ENGINE =====
-  // Each template is pure data — add a new one here and it automatically
-  // gets every feature (word animation, stroke/glow/shadow, rounded box,
-  // color + font customization, canvas export) for free.
+  // 20 professionally distinct templates. Each: font, weight, case, base color,
+  // active color, size ratio, highlight style (hl-*), entry animation (enter-*
+  // or reveal-*), plus optional box, stroke, glow, shadow, letter-spacing and
+  // line-height personality.
   const TEMPLATES = [
-    { id:'studio-clean', name:'Studio Clean', cat:'Talking Head', tags:['Clean'], font:"'Inter',sans-serif", weight:800, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.048, box:'#000000', radius:6, shadow:'0 2px 6px rgba(0,0,0,.8)', anim:'pop' },
-    { id:'mic-check', name:'Mic Check', cat:'Podcast', tags:['Bold'], font:"'Poppins',sans-serif", weight:800, case:'none', color:'#fff', active:'#FFD166', size:0.05, stroke:1.5, strokeColor:'#000', anim:'bounce' },
-    { id:'chalkboard', name:'Chalkboard Pro', cat:'Education', tags:['Clean'], font:"'Space Grotesk',sans-serif", weight:600, case:'none', color:'#EAEAEA', active:'#7CFFB2', size:0.044, box:'rgba(0,0,0,.55)', radius:8, anim:'type' },
-    { id:'rise-grind', name:'Rise & Grind', cat:'Motivation', tags:['Bold','Popular'], font:"'Montserrat',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#FF6B4A', size:0.05, glow:true, anim:'pop' },
-    { id:'narrator', name:'The Narrator', cat:'Documentary', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#F2F2F2', active:'#FFD166', size:0.046, shadow:'0 3px 10px rgba(0,0,0,.9)', anim:'fade' },
-    { id:'boardroom', name:'Boardroom', cat:'Business', tags:['Clean'], font:"'Inter',sans-serif", weight:700, case:'none', color:'#fff', active:'#4FD1FF', size:0.044, box:'#0B1420', radius:6, anim:'slide' },
-    { id:'product-blue', name:'Product Blue', cat:'SaaS', tags:['Kinetic'], font:"'Space Grotesk',sans-serif", weight:700, case:'none', color:'#EAF6FF', active:'#4FD1FF', size:0.046, glow:true, anim:'pop' },
-    { id:'runway', name:'Runway Edit', cat:'Fashion', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#fff', active:'#F5C6D6', size:0.048, shadow:'0 3px 12px rgba(0,0,0,.85)', anim:'fade' },
-    { id:'beast-energy', name:'Beast Energy', cat:'Fitness', tags:['Bold','Popular'], font:"'Oswald',sans-serif", weight:800, case:'uppercase', color:'#fff', active:'#FF3B3B', size:0.052, stroke:2, strokeColor:'#000', anim:'pop' },
-    { id:'foodie-pop', name:'Foodie Pop', cat:'Food', tags:['Playful'], font:"'Poppins',sans-serif", weight:700, case:'none', color:'#2B1600', active:'#fff', size:0.046, box:'#FFB238', radius:999, anim:'bounce' },
-    { id:'level-up', name:'Level Up', cat:'Gaming', tags:['Kinetic'], font:"'Bebas Neue',sans-serif", weight:400, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.056, stroke:2, strokeColor:'#000', glow:true, anim:'pop' },
-    { id:'wanderlust', name:'Wanderlust', cat:'Travel', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, italic:true, case:'none', color:'#fff', active:'#FFE9A8', size:0.047, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
-    { id:'bull-run', name:'Bull Run', cat:'Finance', tags:['Clean'], font:"'Space Grotesk',sans-serif", weight:700, case:'none', color:'#EFFFF4', active:'#2ECC71', size:0.045, box:'#0B1F14', radius:6, anim:'slide' },
-    { id:'widescreen', name:'Widescreen', cat:'Cinematic', tags:['Editorial'], font:"'DM Serif Display',serif", weight:400, case:'none', color:'#F5F5F5', active:'#fff', size:0.045, shadow:'0 4px 16px rgba(0,0,0,.95)', anim:'fade' },
-    { id:'gold-standard', name:'Gold Standard', cat:'Luxury', tags:['Editorial','Popular'], font:"'Playfair Display',serif", weight:600, italic:true, case:'none', color:'#D4AF37', active:'#fff', size:0.048, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
-    { id:'caption-chaos', name:'Caption Chaos', cat:'Meme', tags:['Bold'], font:"'Oswald',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#FFE600', size:0.054, stroke:2.5, strokeColor:'#000', anim:'bounce' },
-    { id:'once-upon', name:'Once Upon', cat:'Storytelling', tags:['Editorial'], font:"'Playfair Display',serif", weight:500, italic:true, case:'none', color:'#FFF3D6', active:'#B6FF6A', size:0.046, shadow:'0 3px 10px rgba(0,0,0,.85)', anim:'fade' },
-    { id:'whisper', name:'Whisper', cat:'Minimal', tags:['Clean'], font:"'Inter',sans-serif", weight:500, case:'none', color:'#E7E7E7', active:'#fff', size:0.04, anim:'fade' },
-    { id:'powerhouse', name:'Powerhouse', cat:'Bold', tags:['Bold','Kinetic'], font:"'Oswald',sans-serif", weight:900, case:'uppercase', color:'#fff', active:'#B6FF6A', size:0.055, stroke:2.5, strokeColor:'#000', shadow:'0 3px 8px rgba(0,0,0,.9)', anim:'pop' },
-    { id:'aurora-glow', name:'Aurora Glow', cat:'Premium Gradient', tags:['New','Kinetic'], font:"'Montserrat',sans-serif", weight:800, case:'none', color:'#EAFBFF', active:'#7CFFB2', size:0.048, glow:true, box:'rgba(20,10,40,.5)', radius:10, anim:'bounce' },
+    { id:'minimal',        name:'Minimal',            cat:'Minimal',      tags:['Clean'],              font:"'Inter',sans-serif",           weight:600, case:'none',      color:'#FFFFFF', active:'#FFFFFF', size:0.042, letter:'-0.01em', line:1.2,  hl:'color',     anim:'fade',     shadow:'0 1px 6px rgba(0,0,0,.45)' },
+    { id:'tiktok',         name:'TikTok',             cat:'Creator',      tags:['Bold','Popular'],     font:"'Poppins',sans-serif",         weight:800, case:'uppercase', color:'#FFFFFF', active:'#25F4EE', size:0.052, letter:'0em',    line:1.12, hl:'lift',      anim:'spring',   stroke:2, strokeColor:'#000' },
+    { id:'instagram',      name:'Instagram',          cat:'Creator',      tags:['Popular'],            font:"'Poppins',sans-serif",         weight:700, case:'none',      color:'#FFFFFF', active:'#FFFFFF', size:0.046, letter:'0em',    line:1.15, hl:'fill',      anim:'scale',    fillText:'#000' },
+    { id:'luxury',         name:'Luxury',             cat:'Luxury',       tags:['Editorial'],          font:"'Playfair Display',serif",     weight:600, italic:true, case:'none', color:'#F3ECDD', active:'#D4AF37', size:0.05,  letter:'0.01em', line:1.22, hl:'none',      anim:'fadeup',   shadow:'0 3px 12px rgba(0,0,0,.75)' },
+    { id:'podcast',        name:'Podcast',            cat:'Podcast',      tags:['Bold'],               font:"'Montserrat',sans-serif",      weight:800, case:'none',      color:'#FFFFFF', active:'#FFC93C', size:0.048, letter:'0em',    line:1.15, hl:'lift',      anim:'slideup',  box:'rgba(15,15,18,.72)', radius:12 },
+    { id:'documentary',    name:'Documentary',        cat:'Documentary',  tags:['Editorial'],          font:"'DM Serif Display',serif",     weight:400, case:'none',      color:'#F5F5F0', active:'#E8C87A', size:0.044, letter:'0.005em',line:1.24, hl:'color',     anim:'fade',     shadow:'0 2px 10px rgba(0,0,0,.85)' },
+    { id:'gaming',         name:'Gaming',             cat:'Gaming',       tags:['Kinetic','Popular'],  font:"'Oswald',sans-serif",          weight:700, case:'uppercase', color:'#FFFFFF', active:'#8BFF3C', size:0.054, letter:'0.03em', line:1.1,  hl:'glow',      anim:'spring',   stroke:2, strokeColor:'#0A0A0A', glow:true },
+    { id:'corporate',      name:'Corporate',          cat:'Business',     tags:['Clean'],              font:"'Inter',sans-serif",           weight:700, case:'none',      color:'#FFFFFF', active:'#4FD1FF', size:0.043, letter:'-0.005em',line:1.2, hl:'underline', anim:'fadeup',   shadow:'0 2px 8px rgba(0,0,0,.5)' },
+    { id:'modern',         name:'Modern',             cat:'Modern',       tags:['Kinetic'],            font:"'Space Grotesk',sans-serif",   weight:700, case:'none',      color:'#EAF2FF', active:'#B6FF6A', size:0.047, letter:'0em',    line:1.16, hl:'lift',      anim:'reveal-word' },
+    { id:'apple',          name:'Apple',              cat:'Minimal',      tags:['Clean','Premium'],    font:"'Inter',sans-serif",           weight:500, case:'none',      color:'#FFFFFF', active:'#FFFFFF', size:0.044, letter:'-0.015em',line:1.22, hl:'underline', anim:'reveal-blur' },
+    { id:'netflix',        name:'Netflix',            cat:'Cinematic',    tags:['Editorial'],          font:"'Inter',sans-serif",           weight:600, case:'none',      color:'#F2F2F2', active:'#E50914', size:0.045, letter:'-0.005em',line:1.22, hl:'color',     anim:'fade',     shadow:'0 2px 12px rgba(0,0,0,.9)' },
+    { id:'education',      name:'Education',          cat:'Education',    tags:['Clean'],              font:"'Space Grotesk',sans-serif",   weight:600, case:'none',      color:'#FFFFFF', active:'#7CFFB2', size:0.045, letter:'0em',    line:1.2,  hl:'fill',      anim:'slideup',  fillText:'#06210F', box:'rgba(10,20,14,.6)', radius:10 },
+    { id:'travel',         name:'Travel',             cat:'Travel',       tags:['Editorial'],          font:"'DM Serif Display',serif",     weight:400, italic:true, case:'none', color:'#FFFFFF', active:'#FFE29A', size:0.048, letter:'0.01em', line:1.2,  hl:'none',      anim:'reveal-mask', shadow:'0 3px 14px rgba(0,0,0,.8)' },
+    { id:'motivational',   name:'Motivational',       cat:'Motivation',   tags:['Bold','Popular'],     font:"'Montserrat',sans-serif",      weight:900, case:'uppercase', color:'#FFFFFF', active:'#FF6B4A', size:0.055, letter:'0.01em', line:1.08, hl:'glow',      anim:'spring',   stroke:2.5, strokeColor:'#000', glow:true },
+    { id:'yt-shorts',      name:'YouTube Shorts',     cat:'Creator',      tags:['Bold'],               font:"'Poppins',sans-serif",         weight:800, case:'none',      color:'#FFFFFF', active:'#FF0033', size:0.05,  letter:'0em',    line:1.12, hl:'fill',      anim:'scale',    fillText:'#FFFFFF' },
+    { id:'creator',        name:'Creator',            cat:'Creator',      tags:['Kinetic','New'],      font:"'Poppins',sans-serif",         weight:700, case:'none',      color:'#FFFFFF', active:'#B6FF6A', size:0.048, letter:'0em',    line:1.14, hl:'lift',      anim:'reveal-word', stroke:1.5, strokeColor:'#0A0A0A' },
+    { id:'soft',           name:'Soft',               cat:'Minimal',      tags:['Clean','Soft'],       font:"'Inter',sans-serif",           weight:500, case:'none',      color:'#F4F1EC', active:'#F5C6D6', size:0.043, letter:'0em',    line:1.24, hl:'none',      anim:'reveal-blur', shadow:'0 2px 10px rgba(0,0,0,.4)' },
+    { id:'bold',           name:'Bold',               cat:'Bold',         tags:['Bold','Kinetic'],     font:"'Oswald',sans-serif",          weight:700, case:'uppercase', color:'#FFFFFF', active:'#FFE600', size:0.056, letter:'0.02em', line:1.06, hl:'lift',      anim:'spring',   stroke:3, strokeColor:'#000', shadow:'0 3px 8px rgba(0,0,0,.85)' },
+    { id:'minimal-float',  name:'Minimal Floating',   cat:'Minimal',      tags:['Clean','New'],        font:"'Inter',sans-serif",           weight:600, case:'none',      color:'#0E120F', active:'#1BA672', size:0.042, letter:'-0.005em',line:1.2, hl:'color',     anim:'fadeup',   box:'rgba(255,255,255,.92)', radius:999, shadowNone:true },
+    { id:'premium-cine',   name:'Premium Cinematic',  cat:'Cinematic',    tags:['Editorial','Premium'],font:"'Playfair Display',serif",     weight:500, italic:true, case:'none', color:'#F5F5F5', active:'#FFFFFF', size:0.046, letter:'0.02em', line:1.28, hl:'none',      anim:'reveal-blur', shadow:'0 4px 18px rgba(0,0,0,.95)' },
   ];
   const CATEGORIES = ['All', ...Array.from(new Set(TEMPLATES.map(t => t.cat)))];
 
@@ -823,23 +873,48 @@
   function applyTemplateVars(el, tpl) {
     const frame = document.querySelector('.video-frame');
     const frameH = (frame && frame.clientHeight) || 480;
-    const size = Math.round(frameH * (tpl.size || 0.045));
+    const size = Math.max(11, Math.round(frameH * (tpl.size || 0.045)));
+    const activeColor = customOverride.color || tpl.active;
+
     el.style.setProperty('--tpl-size', size + 'px');
-    el.style.setProperty('--tpl-box-pad', Math.round(size * 0.4) + 'px ' + Math.round(size * 0.9) + 'px');
     el.style.setProperty('--tpl-font', customOverride.font || tpl.font);
     el.style.setProperty('--tpl-weight', tpl.weight);
     el.style.setProperty('--tpl-style', tpl.italic ? 'italic' : 'normal');
     el.style.setProperty('--tpl-case', tpl.case === 'uppercase' ? 'uppercase' : 'none');
     el.style.setProperty('--tpl-color', tpl.color);
-    el.style.setProperty('--tpl-active', customOverride.color || tpl.active);
-    el.style.setProperty('--tpl-letter', tpl.case === 'uppercase' ? '.02em' : '0em');
+    el.style.setProperty('--tpl-active', activeColor);
+    el.style.setProperty('--tpl-letter', tpl.letter || '0em');
+    el.style.setProperty('--tpl-line', tpl.line || 1.18);
+    el.style.setProperty('--tpl-fill-text', tpl.fillText || '#0B0F0C');
     el.style.setProperty('--tpl-box-bg', tpl.box || 'none');
-    el.style.setProperty('--tpl-box-radius', (tpl.radius ?? 8) + 'px');
+    el.style.setProperty('--tpl-box-radius', (tpl.radius ?? 10) + 'px');
+    el.style.setProperty('--tpl-box-pad', tpl.box ? '.34em .8em' : '0');
     el.style.setProperty('--tpl-stroke', (tpl.stroke || 0) + 'px');
     el.style.setProperty('--tpl-stroke-color', tpl.strokeColor || '#000');
-    el.style.setProperty('--tpl-shadow', tpl.shadow || (tpl.glow ? `0 0 12px ${customOverride.color || tpl.active}` : '0 2px 6px rgba(0,0,0,.7)'));
-    el.className = el.className.replace(/anim-\w+/g, '').trim();
-    el.classList.add('anim-' + (tpl.anim || 'fade'));
+    el.style.setProperty('--tpl-shadow',
+      tpl.shadowNone ? 'none' :
+      (tpl.shadow || (tpl.glow ? `0 0 .5em ${activeColor}, 0 2px 8px rgba(0,0,0,.6)` : '0 2px 8px rgba(0,0,0,.55)')));
+
+    // Reset highlight + entry classes, keep the base overlay class
+    el.className = el.className
+      .replace(/\bhl-\w+\b/g, '')
+      .replace(/\benter-\w+\b/g, '')
+      .replace(/\breveal-\w+\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    el.classList.add('hl-' + (tpl.hl || 'color'));
+
+    // Entry can be a whole-phrase animation (enter-*) or a per-word reveal (reveal-*)
+    const anim = tpl.anim || 'fade';
+    if (anim.startsWith('reveal-')) {
+      el.classList.add(anim);
+      el.dataset.reveal = '1';
+    } else {
+      el.classList.add('enter-' + anim);
+      delete el.dataset.reveal;
+    }
+    el.dataset.anim = anim;
   }
 
   function renderCategoryChips() {
@@ -864,19 +939,27 @@
       (!q || t.name.toLowerCase().includes(q) || t.cat.toLowerCase().includes(q))
     );
     grid.innerHTML = list.map(t => {
+      const letter = t.letter || '0em';
       const previewStyle = `
         font-family:${t.font}; font-weight:${t.weight}; font-style:${t.italic ? 'italic' : 'normal'};
         text-transform:${t.case === 'uppercase' ? 'uppercase' : 'none'}; color:${t.color};
-        ${t.stroke ? `-webkit-text-stroke:${t.stroke}px ${t.strokeColor}; paint-order:stroke fill;` : ''}
-        ${t.shadow ? `text-shadow:${t.shadow};` : (t.glow ? `text-shadow:0 0 10px ${t.active};` : '')}
+        letter-spacing:${letter}; font-size:14px;
+        ${t.stroke ? `-webkit-text-stroke:${Math.min(t.stroke, 1.5)}px ${t.strokeColor}; paint-order:stroke fill;` : ''}
+        ${t.shadowNone ? 'text-shadow:none;' : (t.shadow ? `text-shadow:${t.shadow};` : (t.glow ? `text-shadow:0 0 8px ${t.active};` : 'text-shadow:0 1px 4px rgba(0,0,0,.6);'))}
       `;
-      const boxStyle = t.box ? `background:${t.box}; border-radius:${t.radius ?? 8}px; padding:5px 12px; display:inline-block;` : '';
+      // Reflect the highlight style on the active demo word.
+      let activeExtra = `color:${t.active};`;
+      if (t.hl === 'fill') activeExtra = `color:${t.fillText || '#000'}; background:${t.active}; padding:1px 5px; border-radius:5px;`;
+      else if (t.hl === 'glow') activeExtra = `color:${t.active}; text-shadow:0 0 8px ${t.active};`;
+      else if (t.hl === 'underline') activeExtra = `color:${t.active}; box-shadow:inset 0 -2px 0 ${t.active};`;
+
+      const boxStyle = t.box ? `background:${t.box}; border-radius:${(t.radius ?? 10) >= 100 ? 999 : (t.radius ?? 10)}px; padding:5px 12px; display:inline-block;` : '';
       return `
         <div class="glass style-card${t.id === selectedTemplateId ? ' selected' : ''}" data-id="${t.id}">
           <div class="style-preview">
             <div style="${boxStyle}">
               <span class="demo-word" style="${previewStyle}">the</span>
-              <span class="demo-word" style="${previewStyle} color:${t.active};">quick</span>
+              <span class="demo-word" style="${previewStyle} ${activeExtra}">quick</span>
             </div>
           </div>
           <div class="style-card-name">${t.name}</div>
@@ -890,7 +973,7 @@
         card.classList.add('selected');
         selectedTemplateId = card.dataset.id;
         customOverride = { color: null, font: null };
-        document.getElementById('tplColorPicker').value = getSelectedTemplate().active;
+        document.getElementById('tplColorPicker').value = normalizeHex(getSelectedTemplate().active);
         document.getElementById('tplFontPicker').value = '';
         document.getElementById('tplCustomize').classList.add('show');
         const overlay = document.getElementById('captionOverlay');
@@ -899,9 +982,15 @@
     });
   }
 
+  // Color pickers require a 6-digit hex; fall back safely for named/short values.
+  function normalizeHex(c) {
+    if (typeof c === 'string' && /^#([0-9a-f]{6})$/i.test(c)) return c;
+    return '#B6FF6A';
+  }
+
   function resetTemplateCustomization() {
     customOverride = { color: null, font: null };
-    document.getElementById('tplColorPicker').value = getSelectedTemplate().active;
+    document.getElementById('tplColorPicker').value = normalizeHex(getSelectedTemplate().active);
     document.getElementById('tplFontPicker').value = '';
     applyTemplateVars(document.getElementById('captionOverlay'), getSelectedTemplate());
   }
@@ -923,10 +1012,13 @@
     document.getElementById('lines1Btn').classList.toggle('active', n === 1);
     document.getElementById('lines2Btn').classList.toggle('active', n === 2);
     const ov = document.getElementById('captionOverlay');
-    ov.style.maxWidth = n === 1 ? '96%' : '70%';
-    ov.style.whiteSpace = n === 1 ? 'nowrap' : 'normal';
-    ov.style.overflow = n === 1 ? 'hidden' : 'visible';
-    ov.style.textOverflow = n === 1 ? 'ellipsis' : 'clip';
+    // Fixed container: never truncate, never shift. Width steers how soon
+    // text wraps to a 2nd line. 1-line prefers a wider single row.
+    ov.style.maxWidth = n === 1 ? '94%' : '74%';
+    ov.style.whiteSpace = 'normal';
+    ov.style.overflow = 'visible';
+    ov.style.textOverflow = 'clip';
+    ov.dataset.maxLines = String(n);
   }
 
   function togglePlay() {
@@ -950,6 +1042,7 @@
       frame.style.width = w + 'px';
       frame.style.height = h + 'px';
       fitVideoToFrame();
+      applyTemplateVars(document.getElementById('captionOverlay'), getSelectedTemplate());
     });
   });
 
@@ -1054,12 +1147,9 @@
         });
       }
 
-      // Group into short Captik-style phrase chunks (~4 words each)
-      currentChunks = [];
-      for (let i = 0; i < allWords.length; i += 4) {
-        const slice = allWords.slice(i, i + 4);
-        currentChunks.push({ start: slice[0].start, end: slice[slice.length - 1].end, text: slice.map(w => w.word).join(' '), words: slice });
-      }
+      // Group into natural, readable phrase chunks (3–6 words, break on
+      // punctuation and speech gaps — never one word per line).
+      currentChunks = buildCaptionChunks(allWords);
 
       statusLine.style.display = 'none';
       progressBarWrap.style.display = 'none';
@@ -1086,6 +1176,62 @@
     }
   }
 
+  // ===== Natural phrase chunking (CapCut/Submagic-style) =====
+  function buildCaptionChunks(words) {
+    if (!words || words.length === 0) return [];
+    const MIN = 3, MAX = 6, MAX_CHARS = 30, GAP = 0.45; // seconds of silence = hard break
+    const endsSentence = w => /[.!?]["')\]]?$/.test(w);
+    const endsClause   = w => /[,;:—–]$/.test(w);
+
+    const chunks = [];
+    let cur = [];
+    let chars = 0;
+
+    const flush = () => {
+      if (!cur.length) return;
+      chunks.push({
+        start: cur[0].start,
+        end: cur[cur.length - 1].end,
+        text: cur.map(w => w.word).join(' '),
+        words: cur.slice(),
+      });
+      cur = [];
+      chars = 0;
+    };
+
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      const next = words[i + 1];
+      cur.push(w);
+      chars += w.word.length + 1;
+
+      const count = cur.length;
+      const gapAfter = next ? (next.start - w.end) : Infinity;
+      const wantBreak =
+        count >= MAX ||
+        chars >= MAX_CHARS ||
+        (count >= MIN && endsSentence(w.word)) ||
+        (count >= MIN && endsClause(w.word)) ||
+        (count >= MIN && gapAfter >= GAP);
+
+      if (wantBreak) flush();
+    }
+    flush();
+
+    // Avoid stranded 1–2 word tails: merge a tiny final chunk back if it fits.
+    for (let i = chunks.length - 1; i > 0; i--) {
+      if (chunks[i].words.length < MIN &&
+          chunks[i - 1].words.length + chunks[i].words.length <= MAX) {
+        const prev = chunks[i - 1];
+        prev.words = prev.words.concat(chunks[i].words);
+        prev.end = chunks[i].end;
+        prev.text = prev.words.map(w => w.word).join(' ');
+        chunks.splice(i, 1);
+      }
+    }
+    return chunks;
+  }
+
   let lastChunkStart = null;
   let activeWordEls = [];
 
@@ -1099,20 +1245,20 @@
       if (chunk) {
         if (chunk.start !== lastChunkStart) {
           lastChunkStart = chunk.start;
-          overlay.innerHTML = `<div class="caption-box">${chunk.words.map(w => `<span class="kword">${w.word}</span>`).join(' ')}</div>`;
-          activeWordEls = Array.from(overlay.querySelectorAll('.kword')).map((el, i) => ({ el, start: chunk.words[i].start, end: chunk.words[i].end }));
+          overlay.innerHTML =
+            `<div class="caption-box">${chunk.words
+              .map((w, i) => `<span class="kword" style="--wi:${i}">${w.word}</span>`)
+              .join(' ')}</div>`;
+          activeWordEls = Array.from(overlay.querySelectorAll('.kword'))
+            .map((el, i) => ({ el, start: chunk.words[i].start, end: chunk.words[i].end }));
+          // Re-trigger the entry animation cleanly (no layout shift).
           overlay.classList.remove('show');
           void overlay.offsetWidth;
           overlay.classList.add('show');
         }
-        const isTypewriter = getSelectedTemplate().anim === 'type';
+        // Word-by-word highlight (styling handled purely by hl-* CSS).
         activeWordEls.forEach(w => {
-          if (isTypewriter) {
-            w.el.classList.toggle('kword-unspoken', t < w.start);
-            w.el.classList.toggle('kword-active', t >= w.start);
-          } else {
-            w.el.classList.toggle('kword-active', t >= w.start && t <= w.end);
-          }
+          w.el.classList.toggle('kword-active', t >= w.start && t <= w.end);
         });
       } else {
         lastChunkStart = null;
@@ -1154,33 +1300,32 @@
     const tpl = getSelectedTemplate();
     const family = customOverride.font || tpl.font;
     const activeColor = customOverride.color || tpl.active;
-    const anim = tpl.anim || 'fade';
-    const isType = anim === 'type';
+    const hl = tpl.hl || 'color';
     const fontSize = Math.round(canvasH * (tpl.size || 0.045));
-    const scaleMap = { pop: 1.28, bounce: 1.2, slide: 1.06, fade: 1.03, type: 1 };
-    const activeFontSize = Math.round(fontSize * (scaleMap[anim] || 1.1));
-    const yOffsetMap = { bounce: -fontSize * 0.18, slide: -fontSize * 0.09, pop: 0, fade: 0, type: 0 };
-    const gap = fontSize * 0.28;
+    const activeScale = (hl === 'lift') ? 1.08 : (hl === 'glow') ? 1.06 : 1.0;
+    const gap = fontSize * 0.3;
+    const italic = tpl.italic ? 'italic ' : '';
     ctx.textBaseline = 'middle';
 
     const measurements = chunkWords.map(w => {
-      const spoken = t >= w.start;
-      const isActive = isType ? spoken : (t >= w.start && t <= w.end);
-      const fs = (!isType && isActive) ? activeFontSize : fontSize;
-      ctx.font = `${tpl.italic ? 'italic ' : ''}${tpl.weight} ${fs}px ${family}`;
+      const isActive = t >= w.start && t <= w.end;
+      const fs = isActive ? Math.round(fontSize * activeScale) : fontSize;
+      ctx.font = `${italic}${tpl.weight} ${fs}px ${family}`;
       const text = tpl.case === 'uppercase' ? w.word.toUpperCase() : w.word;
-      return { text, fs, width: ctx.measureText(text).width, isActive, visible: isType ? spoken : true };
+      return { text, fs, width: ctx.measureText(text).width, isActive };
     });
-    const totalW = measurements.reduce((a, m) => a + m.width, 0) + gap * (measurements.length - 1);
-    const paddingX = fontSize * 0.7, paddingY = fontSize * 0.5;
-    const boxH = Math.round(fontSize * 1.3) + paddingY * 2;
-    const boxW = totalW + paddingX * 2;
-    const cx = canvasW / 2, cy = canvasH * 0.86;
 
+    const totalW = measurements.reduce((a, m) => a + m.width, 0) + gap * (measurements.length - 1);
+    const cx = canvasW / 2, cy = canvasH * 0.85;
+
+    // Draw phrase box background (matches preview)
     if (tpl.box) {
-      ctx.fillStyle = tpl.box;
-      const r = tpl.radius >= 100 ? boxH / 2 : (tpl.radius || 6);
+      const paddingX = fontSize * 0.65, paddingY = fontSize * 0.42;
+      const boxH = Math.round(fontSize * 1.25) + paddingY * 2;
+      const boxW = totalW + paddingX * 2;
+      const r = (tpl.radius >= 100) ? boxH / 2 : (tpl.radius ?? 10);
       const x = cx - boxW / 2, y = cy - boxH / 2;
+      ctx.fillStyle = tpl.box;
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.arcTo(x + boxW, y, x + boxW, y + boxH, r);
@@ -1194,19 +1339,73 @@
     ctx.textAlign = 'left';
     let x = cx - totalW / 2;
     measurements.forEach(m => {
-      if (isType && !m.visible) { x += m.width + gap; return; } // not spoken yet — skip entirely
-      ctx.font = `${tpl.italic ? 'italic ' : ''}${tpl.weight} ${m.fs}px ${family}`;
-      ctx.globalAlpha = isType ? 1 : (m.isActive ? 1 : 0.55);
-      const drawY = cy + (m.isActive ? (yOffsetMap[anim] || 0) : 0);
-      if (tpl.glow && m.isActive) { ctx.shadowColor = activeColor; ctx.shadowBlur = m.fs * 0.5; }
-      else { ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = m.fs * 0.2; }
+      ctx.font = `${italic}${tpl.weight} ${m.fs}px ${family}`;
+
+      // Base opacity per highlight style
+      let baseAlpha = 1;
+      if (hl === 'color') baseAlpha = m.isActive ? 1 : 0.62;
+      else if (hl === 'lift') baseAlpha = m.isActive ? 1 : 0.55;
+      else if (hl === 'glow') baseAlpha = m.isActive ? 1 : 0.5;
+      else if (hl === 'fill') baseAlpha = m.isActive ? 1 : 0.72;
+      else if (hl === 'underline') baseAlpha = m.isActive ? 1 : 0.68;
+      else baseAlpha = 1; // hl-none
+
+      const drawY = cy + (m.isActive && hl === 'lift' ? -m.fs * 0.04 : 0);
+
+      // fill-style highlight: pill behind active word
+      if (hl === 'fill' && m.isActive) {
+        const padX = m.fs * 0.18, padY = m.fs * 0.14;
+        const pillH = m.fs + padY * 2, pillW = m.width + padX * 2;
+        const rr = m.fs * 0.28;
+        const px = x - padX, py = drawY - pillH / 2;
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = activeColor;
+        ctx.beginPath();
+        ctx.moveTo(px + rr, py);
+        ctx.arcTo(px + pillW, py, px + pillW, py + pillH, rr);
+        ctx.arcTo(px + pillW, py + pillH, px, py + pillH, rr);
+        ctx.arcTo(px, py + pillH, px, py, rr);
+        ctx.arcTo(px, py, px + pillW, py, rr);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.globalAlpha = baseAlpha;
+
+      // Shadow / glow
+      if ((hl === 'glow' || tpl.glow) && m.isActive) {
+        ctx.shadowColor = activeColor; ctx.shadowBlur = m.fs * 0.5;
+      } else if (tpl.shadowNone) {
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+      } else {
+        ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = m.fs * 0.18;
+      }
+
+      // Stroke / outline
       if (tpl.stroke) {
         ctx.lineWidth = m.fs * (tpl.stroke / 14);
         ctx.strokeStyle = tpl.strokeColor || '#000';
+        ctx.lineJoin = 'round';
         ctx.strokeText(m.text, x, drawY);
       }
-      ctx.fillStyle = (!isType && m.isActive) ? activeColor : tpl.color;
+
+      // Fill color
+      if (hl === 'fill' && m.isActive) ctx.fillStyle = tpl.fillText || '#000';
+      else if (m.isActive) ctx.fillStyle = activeColor;
+      else ctx.fillStyle = tpl.color;
       ctx.fillText(m.text, x, drawY);
+
+      // Underline highlight
+      if (hl === 'underline' && m.isActive) {
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = activeColor;
+        ctx.lineWidth = Math.max(1, m.fs * 0.06);
+        ctx.beginPath();
+        ctx.moveTo(x, drawY + m.fs * 0.55);
+        ctx.lineTo(x + m.width, drawY + m.fs * 0.55);
+        ctx.stroke();
+      }
+
       x += m.width + gap;
     });
     ctx.globalAlpha = 1;
